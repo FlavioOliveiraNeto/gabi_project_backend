@@ -66,6 +66,7 @@ end
 gem 'devise'
 gem 'pundit'
 gem 'rack-attack'
+gem "rack-cors"
 gem 'secure_headers'
 
 group :development do

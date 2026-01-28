@@ -32,6 +32,8 @@
 
 # Ignore key files for decrypting credentials and more.
 /config/*.key
+/config/credentials/*.key
+/config/database.yml
 
 
 /app/assets/builds/*
