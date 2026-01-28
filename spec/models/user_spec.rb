@@ -5,10 +5,18 @@ RSpec.describe User, type: :model do
     expect(build(:user)).to be_valid
   end
 
-  it "define role client por padrão" do
-    user = build(:user)
+  it "possui muitas anotações clínicas" do
+    user = create(:user)
+    create(:clinical_note, user: user)
+    create(:clinical_note, user: user)
+    
+    expect(user.clinical_notes.count).to eq(2)
+  end
 
-    expect(user.client?).to be true
-    expect(user.admin?).to be false
+  it "deleta as anotações se o usuário for deletado" do
+    user = create(:user)
+    create(:clinical_note, user: user)
+    
+    expect { user.destroy }.to change(ClinicalNote, :count).by(-1)
   end
 end

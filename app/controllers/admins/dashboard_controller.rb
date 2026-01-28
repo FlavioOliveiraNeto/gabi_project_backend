@@ -4,6 +4,19 @@ class Admins::DashboardController < ApplicationController
 
   def index
     authorize :admin
-    head :ok
+    
+    clients = User.where(role: :client).order(created_at: :desc)
+
+    data = clients.map do |client|
+      {
+        id: client.id,
+        email: client.email,
+        sessions_count: client.sessions_count,
+        google_meet_link: client.google_meet_link,
+        notes: client.try(:clinical_notes) || [] 
+      }
+    end
+
+    render json: { clients: data }, status: :ok
   end
 end

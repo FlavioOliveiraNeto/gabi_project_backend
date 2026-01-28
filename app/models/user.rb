@@ -7,4 +7,6 @@ class User < ApplicationRecord
          :rememberable,
          :validatable,
          :confirmable
+
+  has_many :clinical_notes, dependent: :destroy
 end
