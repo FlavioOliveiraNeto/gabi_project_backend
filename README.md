@@ -22,3 +22,8 @@ Things you may want to cover:
 * Deployment instructions
 
 * ...
+
+## Frontend (Vue + Vite + Tailwindcss + Cypress)
+
+O frontend fica na pasta `frontend/` e é independente do backend Rails. Veja instruções e scripts em
+`frontend/README.md`.

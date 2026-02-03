@@ -1,0 +1,139 @@
+<div id="app" class="min-h-screen bg-gradient-to-b from-slate-950 via-slate-950 to-slate-900">
+  <header class="px-6 pt-6 md:px-12">
+    <nav class="mx-auto flex max-w-6xl items-center justify-between rounded-full border border-slate-800 bg-slate-950/70 px-4 py-3 backdrop-blur">
+      <div class="flex items-center gap-3 text-lg font-semibold">
+        <span class="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-400 text-slate-950">G</span>
+        Gabi Care
+      </div>
+      <div class="hidden items-center gap-6 text-sm text-slate-300 md:flex">
+        <a href="#features" class="transition hover:text-white">Recursos</a>
+        <a href="#workflow" class="transition hover:text-white">Fluxo</a>
+        <a href="#testimonials" class="transition hover:text-white">Depoimentos</a>
+      </div>
+      <div class="flex items-center gap-3 text-sm">
+        <%= link_to "Entrar", new_user_session_path, class: "rounded-full border border-slate-700 px-4 py-2 text-slate-200 transition hover:border-emerald-400 hover:text-white" %>
+        <%= link_to "Criar conta", new_user_registration_path, class: "rounded-full bg-emerald-400 px-4 py-2 font-semibold text-slate-950 transition hover:bg-emerald-300" %>
+      </div>
+    </nav>
+  </header>
+
+  <main class="mx-auto flex max-w-6xl flex-col gap-20 px-6 pb-20 pt-16 md:px-12">
+    <section class="grid gap-10 lg:grid-cols-[1.2fr_0.8fr] lg:items-center">
+      <div class="space-y-6">
+        <p class="text-sm uppercase tracking-[0.3em] text-emerald-300">Clínica digital moderna</p>
+        <h1 class="text-4xl font-semibold leading-tight md:text-5xl">
+          Crie jornadas terapêuticas com dados, empatia e automação.
+        </h1>
+        <p class="text-lg text-slate-300">
+          Um hub inteligente para terapeutas acompanharem clientes, organizarem sessões e oferecerem uma
+          experiência mobile-first impecável.
+        </p>
+        <div class="flex flex-wrap items-center gap-4">
+          <%= link_to "Começar agora", new_user_registration_path, class: "rounded-full bg-emerald-400 px-6 py-3 text-sm font-semibold text-slate-950 transition hover:bg-emerald-300" %>
+          <%= link_to "Ver dashboards", admins_dashboard_path, class: "rounded-full border border-slate-700 px-6 py-3 text-sm font-semibold text-slate-100 transition hover:border-emerald-400" %>
+        </div>
+        <div class="flex items-center gap-6 text-sm text-slate-400">
+          <div>
+            <p class="text-2xl font-semibold text-white">+120%</p>
+            <p>retenção em 90 dias</p>
+          </div>
+          <div>
+            <p class="text-2xl font-semibold text-white">4.9/5</p>
+            <p>satisfação mobile</p>
+          </div>
+          <div>
+            <p class="text-2xl font-semibold text-white">24h</p>
+            <p>tempo médio de setup</p>
+          </div>
+        </div>
+      </div>
+      <div class="rounded-3xl border border-slate-800 bg-slate-900/60 p-6 shadow-xl shadow-emerald-500/10">
+        <div class="flex items-center justify-between">
+          <p class="text-sm text-slate-400">Próximas sessões</p>
+          <span class="rounded-full bg-emerald-400/10 px-3 py-1 text-xs text-emerald-300">Ao vivo</span>
+        </div>
+        <div class="mt-6 space-y-4">
+          <div class="rounded-2xl border border-slate-800 bg-slate-950 px-4 py-4">
+            <div class="flex items-center justify-between">
+              <p class="font-semibold">Ana Paula</p>
+              <span class="text-xs text-slate-400">Hoje · 14:00</span>
+            </div>
+            <p class="mt-2 text-sm text-slate-400">Sessão de acompanhamento · Google Meet</p>
+          </div>
+          <div class="rounded-2xl border border-slate-800 bg-slate-950 px-4 py-4">
+            <div class="flex items-center justify-between">
+              <p class="font-semibold">Pedro Costa</p>
+              <span class="text-xs text-slate-400">Amanhã · 09:00</span>
+            </div>
+            <p class="mt-2 text-sm text-slate-400">Triagem inicial · Presencial</p>
+          </div>
+          <div class="rounded-2xl border border-dashed border-slate-700 px-4 py-6 text-center text-sm text-slate-400">
+            Conecte seu calendário e sincronize em tempo real.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="features" class="grid gap-6 md:grid-cols-3">
+      <% @sections.each do |section| %>
+        <div class="rounded-3xl border border-slate-800 bg-slate-900/60 p-6">
+          <h3 class="text-lg font-semibold"><%= section[:title] %></h3>
+          <p class="mt-3 text-sm text-slate-300"><%= section[:description] %></p>
+        </div>
+      <% end %>
+    </section>
+
+    <section id="workflow" class="grid gap-10 lg:grid-cols-[0.7fr_1.3fr]">
+      <div class="space-y-4">
+        <p class="text-sm uppercase tracking-[0.3em] text-emerald-300">Fluxo guiado</p>
+        <h2 class="text-3xl font-semibold">Uma jornada coesa do primeiro contato ao acompanhamento.</h2>
+        <p class="text-base text-slate-300">
+          O painel unificado garante que terapeuta e cliente tenham clareza sobre metas, sessões e
+          comunicação, com todas as interações sincronizadas.
+        </p>
+        <%= link_to "Ver painel do cliente", clients_dashboard_path, class: "inline-flex items-center gap-2 rounded-full border border-slate-700 px-5 py-2 text-sm text-white transition hover:border-emerald-400" %>
+      </div>
+      <div class="grid gap-4 md:grid-cols-2">
+        <div class="rounded-3xl border border-slate-800 bg-slate-900/60 p-6">
+          <p class="text-sm text-emerald-300">01</p>
+          <h3 class="mt-3 text-lg font-semibold">Onboarding inteligente</h3>
+          <p class="mt-2 text-sm text-slate-300">Colete dados iniciais e personalize o plano terapêutico.</p>
+        </div>
+        <div class="rounded-3xl border border-slate-800 bg-slate-900/60 p-6">
+          <p class="text-sm text-emerald-300">02</p>
+          <h3 class="mt-3 text-lg font-semibold">Sessões integradas</h3>
+          <p class="mt-2 text-sm text-slate-300">Links de reunião, notas clínicas e acompanhamento contínuo.</p>
+        </div>
+        <div class="rounded-3xl border border-slate-800 bg-slate-900/60 p-6">
+          <p class="text-sm text-emerald-300">03</p>
+          <h3 class="mt-3 text-lg font-semibold">Insights de progresso</h3>
+          <p class="mt-2 text-sm text-slate-300">Dashboards e alertas para monitorar evolução.</p>
+        </div>
+        <div class="rounded-3xl border border-slate-800 bg-slate-900/60 p-6">
+          <p class="text-sm text-emerald-300">04</p>
+          <h3 class="mt-3 text-lg font-semibold">Comunicação fluida</h3>
+          <p class="mt-2 text-sm text-slate-300">Mensagens seguras e lembretes automáticos.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="testimonials" class="rounded-3xl border border-slate-800 bg-slate-900/60 p-8">
+      <div class="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+        <div>
+          <p class="text-sm uppercase tracking-[0.3em] text-emerald-300">Depoimentos</p>
+          <h2 class="mt-3 text-3xl font-semibold">Experiências elogiadas por terapeutas e clientes.</h2>
+        </div>
+        <div class="flex items-center gap-4">
+          <div class="rounded-2xl border border-slate-800 bg-slate-950 px-5 py-4">
+            <p class="text-sm text-slate-300">"Passei a ter visão clara da minha agenda e evolução."</p>
+            <p class="mt-2 text-xs text-slate-500">Camila · Terapeuta</p>
+          </div>
+          <div class="rounded-2xl border border-slate-800 bg-slate-950 px-5 py-4">
+            <p class="text-sm text-slate-300">"Consigo acompanhar metas e sessões sem esforço."</p>
+            <p class="mt-2 text-xs text-slate-500">Henrique · Cliente</p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>

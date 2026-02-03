@@ -1,0 +1,82 @@
+<div class="min-h-screen bg-slate-950">
+  <header class="border-b border-slate-800 bg-slate-950/80 px-6 py-6 backdrop-blur">
+    <div class="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-4">
+      <div>
+        <p class="text-sm uppercase tracking-[0.3em] text-emerald-300">Dashboard do cliente</p>
+        <h1 class="text-3xl font-semibold">Olá, <%= @client_profile&.dig(:email) || "visitante" %></h1>
+      </div>
+      <div class="flex items-center gap-3">
+        <%= link_to "Agendar sessão", "#", class: "rounded-full bg-emerald-400 px-5 py-2 text-sm font-semibold text-slate-950" %>
+        <%= link_to "Voltar para home", root_path, class: "rounded-full border border-slate-700 px-5 py-2 text-sm text-slate-200" %>
+      </div>
+    </div>
+  </header>
+
+  <main class="mx-auto flex max-w-5xl flex-col gap-8 px-6 py-10">
+    <% if flash[:alert] %>
+      <div class="rounded-2xl border border-amber-400/30 bg-amber-400/10 px-4 py-3 text-sm text-amber-200">
+        <%= flash[:alert] %>
+      </div>
+    <% end %>
+
+    <section class="grid gap-4 md:grid-cols-3">
+      <div class="rounded-3xl border border-slate-800 bg-slate-900/60 p-6">
+        <p class="text-xs uppercase tracking-[0.3em] text-slate-400">Sessões realizadas</p>
+        <p class="mt-4 text-3xl font-semibold"><%= @client_profile&.dig(:sessions_count) || 0 %></p>
+        <p class="mt-2 text-sm text-slate-400">Seu ritmo nas últimas semanas</p>
+      </div>
+      <div class="rounded-3xl border border-slate-800 bg-slate-900/60 p-6">
+        <p class="text-xs uppercase tracking-[0.3em] text-slate-400">Próxima sessão</p>
+        <p class="mt-4 text-3xl font-semibold">Seg · 18:00</p>
+        <p class="mt-2 text-sm text-slate-400">Disponível para ajuste</p>
+      </div>
+      <div class="rounded-3xl border border-slate-800 bg-slate-900/60 p-6">
+        <p class="text-xs uppercase tracking-[0.3em] text-slate-400">Link de acesso</p>
+        <p class="mt-4 text-sm font-semibold text-emerald-300">
+          <%= @client_profile&.dig(:google_meet_link).presence || "Link em preparação" %>
+        </p>
+        <p class="mt-2 text-sm text-slate-400">Receba 10 min antes</p>
+      </div>
+    </section>
+
+    <section class="grid gap-6 lg:grid-cols-[1.4fr_1fr]">
+      <div class="rounded-3xl border border-slate-800 bg-slate-900/60 p-6">
+        <h2 class="text-lg font-semibold">Sua jornada</h2>
+        <div class="mt-5 space-y-4">
+          <div class="rounded-2xl border border-slate-800 bg-slate-950 px-4 py-4">
+            <div class="flex items-center justify-between text-sm">
+              <span class="text-slate-300">Meta da semana</span>
+              <span class="text-emerald-300">80%</span>
+            </div>
+            <div class="mt-3 h-2 w-full rounded-full bg-slate-800">
+              <div class="h-2 w-[80%] rounded-full bg-emerald-400"></div>
+            </div>
+            <p class="mt-3 text-xs text-slate-400">Praticar exercícios de respiração 4x</p>
+          </div>
+          <div class="rounded-2xl border border-slate-800 bg-slate-950 px-4 py-4">
+            <p class="text-sm text-slate-300">Checklist pós sessão</p>
+            <ul class="mt-3 space-y-2 text-xs text-slate-400">
+              <li>✔️ Anotar emoções-chave</li>
+              <li>✔️ Registrar gatilhos percebidos</li>
+              <li>⬜ Agendar próximo encontro</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="rounded-3xl border border-slate-800 bg-slate-900/60 p-6">
+        <h2 class="text-lg font-semibold">Mensagens recentes</h2>
+        <div class="mt-4 space-y-3 text-sm text-slate-300">
+          <div class="rounded-2xl border border-slate-800 bg-slate-950 px-4 py-4">
+            <p class="font-semibold">Equipe Gabi Care</p>
+            <p class="mt-2 text-xs text-slate-400">Lembrete: hidratação e relaxamento hoje.</p>
+          </div>
+          <div class="rounded-2xl border border-slate-800 bg-slate-950 px-4 py-4">
+            <p class="font-semibold">Sua terapeuta</p>
+            <p class="mt-2 text-xs text-slate-400">Envie dúvidas ou feedbacks pela plataforma.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>

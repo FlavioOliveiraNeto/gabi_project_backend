@@ -1,0 +1,20 @@
+<%= render "devise/shared/auth_layout" do %>
+  <div class="space-y-3 text-center">
+    <p class="text-xs uppercase tracking-[0.3em] text-emerald-300">Nova senha</p>
+    <h1 class="text-2xl font-semibold">Definir nova senha</h1>
+    <p class="text-sm text-slate-400">Escolha uma senha segura para continuar.</p>
+  </div>
+
+  <%= form_with model: resource, as: resource_name, url: password_path(resource_name), method: :put, class: "mt-6 space-y-4" do |form| %>
+    <%= form.hidden_field :reset_password_token %>
+    <div>
+      <%= form.label :password, "Nova senha", class: "text-xs uppercase tracking-[0.2em] text-slate-400" %>
+      <%= form.password_field :password, autocomplete: "new-password", class: "mt-2 w-full rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white placeholder:text-slate-500 focus:border-emerald-400 focus:outline-none" %>
+    </div>
+    <div>
+      <%= form.label :password_confirmation, class: "text-xs uppercase tracking-[0.2em] text-slate-400" %>
+      <%= form.password_field :password_confirmation, autocomplete: "new-password", class: "mt-2 w-full rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white placeholder:text-slate-500 focus:border-emerald-400 focus:outline-none" %>
+    </div>
+    <%= form.submit "Atualizar senha", class: "w-full rounded-2xl bg-emerald-400 px-6 py-3 text-sm font-semibold text-slate-950 transition hover:bg-emerald-300" %>
+  <% end %>
+<% end %>
