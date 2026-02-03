@@ -11,5 +11,6 @@ class Admins::DashboardController < ApplicationController
       sessions_this_week: @clients.sum(:sessions_count),
       upcoming_sessions: @clients.count { |client| client.google_meet_link.present? }
     }
+    render json: { clients: @clients, stats: @stats }
   end
 end

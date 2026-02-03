@@ -17,5 +17,6 @@ class HomeController < ApplicationController
         description: "Lembretes, documentos e anotações com segurança e rastreabilidade."
       }
     ]
+    render json: @sections
   end
 end
