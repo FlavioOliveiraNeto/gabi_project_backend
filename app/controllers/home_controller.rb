@@ -3,12 +3,19 @@ class HomeController < ApplicationController
   skip_before_action :verify_authenticity_token, raise: false
 
   def index
-    render json: {
-      message: "Bem-vindo à API da Clínica",
-      sections: [
-        { title: "Sobre Mim", content: "Texto sobre a terapeuta..." },
-        { title: "Serviços", content: "Terapia individual, casais..." }
-      ]
-    }, status: :ok
+    @sections = [
+      {
+        title: "Jornadas guiadas por dados",
+        description: "Fluxos inteligentes para triagem, sessões e acompanhamento com métricas sempre à vista."
+      },
+      {
+        title: "Experiência cuidadosa",
+        description: "Design leve, foco em empatia e comunicação clara em qualquer dispositivo."
+      },
+      {
+        title: "Automação segura",
+        description: "Lembretes, documentos e anotações com segurança e rastreabilidade."
+      }
+    ]
   end
 end

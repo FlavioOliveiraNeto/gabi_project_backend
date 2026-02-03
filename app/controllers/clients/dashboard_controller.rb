@@ -3,15 +3,14 @@ class Clients::DashboardController < ApplicationController
 
   def index
     unless current_user.client?
-      return render json: { error: "Acesso restrito a clientes" }, status: :forbidden
+      flash.now[:alert] = "Acesso restrito a clientes."
+      return render :index, status: :forbidden
     end
 
-    render json: {
-      user: {
-        email: current_user.email,
-        sessions_count: current_user.sessions_count,
-        google_meet_link: current_user.google_meet_link
-      }
-    }, status: :ok
+    @client_profile = {
+      email: current_user.email,
+      sessions_count: current_user.sessions_count,
+      google_meet_link: current_user.google_meet_link
+    }
   end
 end

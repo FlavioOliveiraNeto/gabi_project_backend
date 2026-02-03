@@ -1,0 +1,28 @@
+<%= render "devise/shared/auth_layout" do %>
+  <div class="space-y-3 text-center">
+    <p class="text-xs uppercase tracking-[0.3em] text-emerald-300">Nova conta</p>
+    <h1 class="text-2xl font-semibold">Crie seu acesso</h1>
+    <p class="text-sm text-slate-400">Configure seu painel em poucos minutos.</p>
+  </div>
+
+  <%= form_with model: resource, as: resource_name, url: registration_path(resource_name), class: "mt-6 space-y-4" do |form| %>
+    <div>
+      <%= form.label :email, class: "text-xs uppercase tracking-[0.2em] text-slate-400" %>
+      <%= form.email_field :email, autofocus: true, autocomplete: "email", class: "mt-2 w-full rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white placeholder:text-slate-500 focus:border-emerald-400 focus:outline-none" %>
+    </div>
+    <div>
+      <%= form.label :password, class: "text-xs uppercase tracking-[0.2em] text-slate-400" %>
+      <%= form.password_field :password, autocomplete: "new-password", class: "mt-2 w-full rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white placeholder:text-slate-500 focus:border-emerald-400 focus:outline-none" %>
+      <% if @minimum_password_length %>
+        <p class="mt-2 text-xs text-slate-500">Mínimo de <%= @minimum_password_length %> caracteres.</p>
+      <% end %>
+    </div>
+    <div>
+      <%= form.label :password_confirmation, class: "text-xs uppercase tracking-[0.2em] text-slate-400" %>
+      <%= form.password_field :password_confirmation, autocomplete: "new-password", class: "mt-2 w-full rounded-2xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white placeholder:text-slate-500 focus:border-emerald-400 focus:outline-none" %>
+    </div>
+    <%= form.submit "Criar conta", class: "w-full rounded-2xl bg-emerald-400 px-6 py-3 text-sm font-semibold text-slate-950 transition hover:bg-emerald-300" %>
+  <% end %>
+
+  <%= render "devise/shared/links" %>
+<% end %>
