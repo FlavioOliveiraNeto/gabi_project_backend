@@ -54,6 +54,7 @@ group :development, :test do
 end
 
 gem 'devise'
+gem "devise-jwt"
 gem 'pundit'
 gem 'rack-attack'
 gem "rack-cors"
