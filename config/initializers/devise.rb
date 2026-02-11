@@ -25,7 +25,7 @@ Devise.setup do |config|
   config.responder.redirect_status = :see_other
 
   config.jwt do |jwt|
-    jwt.secret = Rails.application.credentials.devise_jwt_secret_key!
+    jwt.secret = Rails.application.credentials.devise_jwt_secret_key || "temporary_build_key"
 
     jwt.dispatch_requests = [
       ['POST', %r{^/users/sign_in$}]
