@@ -7,6 +7,7 @@ class Users::SessionsController < Devise::SessionsController
     render json: {
       user: {
         id: resource.id,
+        name: resource.name,
         email: resource.email,
         role: resource.role
       }
