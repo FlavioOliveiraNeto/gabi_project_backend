@@ -6,14 +6,15 @@ class Therapists::DashboardController < ApplicationController
     authorize :therapist
 
     patients = current_user.patients
-                           .includes(:clinical_notes, :sessions, :weekly_schedules)
-                           .order(created_at: :desc)
+                          .includes(:clinical_notes, :sessions, :weekly_schedules)
+                          .order(created_at: :desc)
 
-    today_weekday = Date.today.wday
+    today_weekday = Date.current.wday
 
-    today_sessions = patients.count do |p|
-      p.weekly_schedules.any? { |s| WeeklySchedule.weekdays[s.weekday] == today_weekday }
-    end
+    today_sessions = patients.joins(:weekly_schedules)
+                            .where(weekly_schedules: { weekday: today_weekday })
+                            .distinct
+                            .count
 
     sessions_this_week = Session
       .joins(:user)
@@ -46,8 +47,8 @@ class Therapists::DashboardController < ApplicationController
       sessions_per_week: schedules.first&.sessions_per_week || 0,
       session_days: schedules.map(&:weekday),
       session_time: schedules.first&.time,
-      completed_sessions: patient.sessions.count { |s| s.status == "completed" },
-      absent_sessions: patient.sessions.count { |s| s.status == "absent" },
+      completed_sessions: patient.sessions.where(status: "completed").count,
+      absent_sessions: patient.sessions.where(status: "absent").count,
       clinical_notes: patient.clinical_notes.sort_by(&:created_at).reverse.map do |n|
         { id: n.id, content: n.content, date: n.date, created_at: n.created_at }
       end
