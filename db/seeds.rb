@@ -43,6 +43,95 @@ clients_data = [
     google_meet_link: nil,
     weekdays: %w[monday],
     sessions_per_week: 1
+  },{
+    name: 'Daniela Souza',
+    email: 'daniela.souza@email.com',
+    password: 'password123',
+    google_meet_link: 'https://meet.google.com/dan-iela-123',
+    weekdays: %w[monday],
+    sessions_per_week: 1,
+    time: '11:00'
+  },
+  {
+    name: 'Eduardo Lima',
+    email: 'eduardo.lima@email.com',
+    password: 'password123',
+    google_meet_link: nil,
+    weekdays: %w[tuesday],
+    sessions_per_week: 1,
+    time: '14:00'
+  },
+  {
+    name: 'Fernanda Alves',
+    email: 'fernanda.alves@email.com',
+    password: 'password123',
+    google_meet_link: 'https://meet.google.com/fer-nan-da22',
+    weekdays: %w[wednesday],
+    sessions_per_week: 1,
+    time: '15:00'
+  },
+  {
+    name: 'Gustavo Rocha',
+    email: 'gustavo.rocha@email.com',
+    password: 'password123',
+    google_meet_link: nil,
+    weekdays: %w[thursday],
+    sessions_per_week: 1,
+    time: '16:00'
+  },
+  {
+    name: 'Helena Martins',
+    email: 'helena.martins@email.com',
+    password: 'password123',
+    google_meet_link: 'https://meet.google.com/hel-ena-987',
+    weekdays: %w[friday],
+    sessions_per_week: 1,
+    time: '17:00'
+  },
+  {
+    name: 'Igor Santana',
+    email: 'igor.santana@email.com',
+    password: 'password123',
+    google_meet_link: nil,
+    weekdays: %w[monday],
+    sessions_per_week: 1,
+    time: '18:00'
+  },
+  {
+    name: 'Juliana Castro',
+    email: 'juliana.castro@email.com',
+    password: 'password123',
+    google_meet_link: 'https://meet.google.com/jul-cas-456',
+    weekdays: %w[tuesday],
+    sessions_per_week: 1,
+    time: '19:00'
+  },
+  {
+    name: 'Kleber Nunes',
+    email: 'kleber.nunes@email.com',
+    password: 'password123',
+    google_meet_link: nil,
+    weekdays: %w[wednesday],
+    sessions_per_week: 1,
+    time: '20:00'
+  },
+  {
+    name: 'Larissa Gomes',
+    email: 'larissa.gomes@email.com',
+    password: 'password123',
+    google_meet_link: 'https://meet.google.com/lar-gom-321',
+    weekdays: %w[thursday],
+    sessions_per_week: 1,
+    time: '09:00'
+  },
+  {
+    name: 'Marcos Pereira',
+    email: 'marcos.pereira@email.com',
+    password: 'password123',
+    google_meet_link: nil,
+    weekdays: %w[friday],
+    sessions_per_week: 1,
+    time: '08:00'
   }
 ]
 
@@ -63,7 +152,7 @@ clients_data.each do |data|
     client.weekly_schedules.create!(
       weekday: weekday,
       sessions_per_week: data[:sessions_per_week],
-      time: '10:00'
+      time: data[:time] || '10:00'
     )
   end
 
