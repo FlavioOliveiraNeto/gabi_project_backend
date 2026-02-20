@@ -11,10 +11,19 @@ class Therapists::DashboardController < ApplicationController
 
     today_weekday = Date.current.wday
 
-    today_sessions = patients.joins(:weekly_schedules)
-                            .where(weekly_schedules: { weekday: today_weekday })
-                            .distinct
-                            .count
+    by_weekday_ids = patients.joins(:weekly_schedules)
+                             .where(weekly_schedules: { weekday: today_weekday })
+                             .distinct
+                             .pluck(:id)
+
+    by_session_ids = Session
+      .joins(:user)
+      .where(users: { therapist_id: current_user.id })
+      .where(status: :scheduled)
+      .where(scheduled_at: Time.zone.now.all_day)
+      .pluck(:user_id)
+
+    today_sessions = (by_weekday_ids + by_session_ids).uniq.count
 
     sessions_this_week = Session
       .joins(:user)

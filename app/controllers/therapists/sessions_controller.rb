@@ -7,7 +7,8 @@ class Therapists::SessionsController < ApplicationController
 
     session = patient.sessions.build(
       scheduled_at: params[:scheduled_at],
-      status: :scheduled
+      status: :scheduled,
+      session_type: params[:session_type].presence || :regular
     )
 
     if session.save

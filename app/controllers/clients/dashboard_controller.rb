@@ -25,6 +25,21 @@ class Clients::DashboardController < ApplicationController
   private
 
   def next_session_for(user)
+    next_concrete = user.sessions
+                        .where(status: :scheduled)
+                        .where("scheduled_at >= ?", Time.zone.now)
+                        .order(:scheduled_at)
+                        .first
+
+    if next_concrete
+      return {
+        date: next_concrete.scheduled_at.to_date.iso8601,
+        time: next_concrete.scheduled_at.strftime("%H:%M"),
+        weekday: next_concrete.scheduled_at.strftime("%A").downcase,
+        session_type: next_concrete.session_type
+      }
+    end
+
     schedules = user.weekly_schedules.to_a
     return nil if schedules.empty?
 
@@ -39,7 +54,8 @@ class Clients::DashboardController < ApplicationController
       return {
         date: candidate.iso8601,
         time: matching.time,
-        weekday: matching.weekday
+        weekday: matching.weekday,
+        session_type: "regular"
       }
     end
 

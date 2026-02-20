@@ -7,4 +7,10 @@ class Session < ApplicationRecord
     absent: 2,
     cancelled: 3
   }
+
+  enum :session_type, {
+    regular: 0,
+    extra: 1,
+    emergency: 2
+  }
 end
