@@ -1,45 +1,48 @@
 puts "Iniciando o seed do banco de dados..."
 
-# Limpeza de notas para não dar erro de foreign key
 ClinicalNote.destroy_all
+WeeklySchedule.destroy_all
+PatientNote.destroy_all
+Session.destroy_all
 User.destroy_all
 
 puts "Banco limpo!"
 
-# Cria uma terapeuta (Admin)
-admin = User.create!(
+# Cria a terapeuta
+therapist = User.create!(
   name: 'Gabriella',
   email: 'gabrielafelixsilva@gmail.com',
   password: 'salame123',
   password_confirmation: 'salame123',
-  role: :admin,
-  confirmed_at: Time.current
+  role: :therapist
 )
 
-puts "Terapeuta criada: #{admin.email} (Senha: salame123)"
+puts "Terapeuta criada: #{therapist.email} (Senha: salame123)"
 
-# Cria alguns pacientes
 clients_data = [
   {
-    name: 'Ana',
+    name: 'Ana Beatriz Oliveira',
     email: 'ana.cliente@email.com',
     password: 'password123',
-    sessions_count: 5,
-    google_meet_link: 'https://meet.google.com/abc-defg-hij'
+    google_meet_link: 'https://meet.google.com/abc-defg-hij',
+    weekdays: %w[monday wednesday friday],
+    sessions_per_week: 3
   },
   {
-    name: 'Bruno',
+    name: 'Bruno Mendes',
     email: 'bruno.cliente@email.com',
     password: 'password123',
-    sessions_count: 12,
-    google_meet_link: 'https://meet.google.com/xyz-wvu-tsr'
+    google_meet_link: 'https://meet.google.com/xyz-wvu-tsr',
+    weekdays: %w[tuesday thursday],
+    sessions_per_week: 2
   },
   {
-    name: 'Carlos',
+    name: 'Carlos Novo',
     email: 'carlos.novo@email.com',
     password: 'password123',
-    sessions_count: 0,
-    google_meet_link: nil
+    google_meet_link: nil,
+    weekdays: %w[monday],
+    sessions_per_week: 1
   }
 ]
 
@@ -50,21 +53,35 @@ clients_data.each do |data|
     password: data[:password],
     password_confirmation: data[:password],
     role: :client,
-    sessions_count: data[:sessions_count],
     google_meet_link: data[:google_meet_link],
-    confirmed_at: Time.current
+    therapist: therapist
   )
-  
-  puts "Cliente criado: #{client.email}"
 
-  # Adiciona anotações para alguns clientes
-  if client.sessions_count > 0
+  puts "Paciente criado: #{client.email}"
+
+  data[:weekdays].each do |weekday|
+    client.weekly_schedules.create!(
+      weekday: weekday,
+      sessions_per_week: data[:sessions_per_week],
+      time: '10:00'
+    )
+  end
+
+  # Sessões de exemplo
+  3.times do |i|
+    Session.create!(
+      user: client,
+      scheduled_at: (i + 1).weeks.ago,
+      status: i == 2 ? :absent : :completed
+    )
+  end
+
+  if client.google_meet_link.present?
     ClinicalNote.create!(
       user: client,
       date: 1.week.ago,
       content: "Sessão inicial. Paciente relatou ansiedade leve. Definimos objetivos iniciais."
     )
-    
     ClinicalNote.create!(
       user: client,
       date: Time.current,

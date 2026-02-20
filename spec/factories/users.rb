@@ -9,8 +9,8 @@ FactoryBot.define do
     sessions_count { rand(0..10) }
     google_meet_link { "https://meet.google.com/#{Faker::Alphanumeric.alpha(number: 10)}" }
 
-    trait :admin do
-      role { :admin }
+    trait :therapist do
+      role { :therapist }
     end
   end
 end

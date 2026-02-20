@@ -4,14 +4,14 @@ class ApplicationController < ActionController::Base
   include Pundit::Authorization
 
   rescue_from Pundit::NotAuthorizedError do
-    redirect_to root_path, alert: "Acesso não autorizado"
+    render json: { error: "Acesso não autorizado" }, status: :forbidden
   end
 
   protected
 
   def after_sign_in_path_for(resource)
-    if resource.admin?
-      admins_dashboard_path
+    if resource.therapist?
+      therapists_dashboard_path
     elsif resource.client?
       clients_dashboard_path
     else

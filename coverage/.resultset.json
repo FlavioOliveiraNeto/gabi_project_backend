@@ -1,6 +1,38 @@
 {
   "RSpec": {
     "coverage": {
+      "/home/flavio/Área de Trabalho/teste/gabi_project/gabi_project_backend/app/controllers/admins/clinical_notes_controller.rb": {
+        "lines": [
+          0,
+          0,
+          null,
+          0,
+          0,
+          0,
+          0,
+          0,
+          null,
+          0,
+          0,
+          0,
+          0,
+          0,
+          null,
+          0,
+          0,
+          0,
+          0,
+          null,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "branches": {}
+      },
       "/home/flavio/Área de Trabalho/teste/gabi_project/gabi_project_backend/app/controllers/admins/dashboard_controller.rb": {
         "lines": [
           0,
@@ -10,6 +42,14 @@
           0,
           0,
           null,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
           0,
           0,
           0,
@@ -66,6 +106,7 @@
           0,
           0,
           0,
+          0,
           0
         ],
         "branches": {}
@@ -90,6 +131,31 @@
           0,
           0,
           0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "branches": {}
+      },
+      "/home/flavio/Área de Trabalho/teste/gabi_project/gabi_project_backend/app/controllers/users/sessions_controller.rb": {
+        "lines": [
+          0,
+          0,
+          null,
+          0,
+          null,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          null,
           0,
           0,
           0,
@@ -132,12 +198,38 @@
           0,
           null,
           0,
+          0,
           0
         ],
         "branches": {}
       },
       "/home/flavio/Área de Trabalho/teste/gabi_project/gabi_project_backend/app/models/jwt_denylist.rb": {
         "lines": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "branches": {}
+      },
+      "/home/flavio/Área de Trabalho/teste/gabi_project/gabi_project_backend/app/models/patient_note.rb": {
+        "lines": [
+          0,
+          0,
+          0
+        ],
+        "branches": {}
+      },
+      "/home/flavio/Área de Trabalho/teste/gabi_project/gabi_project_backend/app/models/session.rb": {
+        "lines": [
+          0,
+          0,
+          null,
+          0,
+          0,
+          0,
+          0,
+          0,
           0,
           0
         ],
@@ -156,7 +248,35 @@
           0,
           null,
           null,
+          0,
+          0,
+          0,
+          0,
           null,
+          null,
+          0,
+          0,
+          0,
+          null,
+          0,
+          0,
+          0
+        ],
+        "branches": {}
+      },
+      "/home/flavio/Área de Trabalho/teste/gabi_project/gabi_project_backend/app/models/weekly_schedule.rb": {
+        "lines": [
+          0,
+          0,
+          null,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
           0,
           0
         ],
@@ -186,6 +306,6 @@
         "branches": {}
       }
     },
-    "timestamp": 1770319426
+    "timestamp": 1771605734
   }
 }

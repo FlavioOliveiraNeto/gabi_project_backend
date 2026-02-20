@@ -1,18 +1,18 @@
 require 'rails_helper'
 
-RSpec.describe "Admins::Dashboard", type: :request do
-  let(:admin) { create(:user, role: :admin) }
+RSpec.describe "Therapists::Dashboard", type: :request do
+  let(:therapist) { create(:user, role: :therapist) }
   let!(:client_1) { create(:user, role: :client, email: "cliente1@teste.com") }
   let!(:client_2) { create(:user, role: :client, email: "cliente2@teste.com") }
   
   let!(:note) { create(:clinical_note, user: client_1, content: "Sessão produtiva") }
 
-  describe "GET /admins/dashboard" do
-    context "quando usuário é admin" do
-      before { sign_in admin }
+  describe "GET /therapists/dashboard" do
+    context "quando usuário é therapist" do
+      before { sign_in therapist }
 
       it "retorna a lista de clientes com suas notas" do
-        get admins_dashboard_path
+        get therapists_dashboard_path
 
         expect(response).to have_http_status(:ok)
         
