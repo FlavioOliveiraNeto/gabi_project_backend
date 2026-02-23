@@ -7,7 +7,7 @@ class Clients::PatientNotesController < ApplicationController
   end
 
   def create
-    note = current_user.patient_notes.build(content: params[:content])
+    note = current_user.patient_notes.build(note_params)
 
     if note.save
       render json: note, status: :created
@@ -26,5 +26,9 @@ class Clients::PatientNotesController < ApplicationController
 
   def ensure_client!
     render json: { error: "Acesso restrito." }, status: :forbidden unless current_user.client?
+  end
+
+  def note_params
+    params.permit(:content)
   end
 end
