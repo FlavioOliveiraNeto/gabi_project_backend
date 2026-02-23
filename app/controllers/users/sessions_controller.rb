@@ -9,7 +9,8 @@ class Users::SessionsController < Devise::SessionsController
         id: resource.id,
         name: resource.name,
         email: resource.email,
-        role: resource.role
+        role: resource.role,
+        must_change_password: resource.must_change_password?
       }
     }, status: :ok
   end

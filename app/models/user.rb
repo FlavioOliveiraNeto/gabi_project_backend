@@ -23,4 +23,14 @@ class User < ApplicationRecord
   has_many :clinical_notes, dependent: :destroy
   has_many :patient_notes, dependent: :destroy
   has_many :weekly_schedules, dependent: :destroy
+
+  # Força troca de senha no primeiro login
+  def must_change_password?
+    self.must_change_password
+  end
+
+  # Após trocar a senha, remove a obrigatoriedade
+  def clear_must_change_password!
+    update_column(:must_change_password, false)
+  end
 end

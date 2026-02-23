@@ -15,7 +15,9 @@ class Therapists::PatientsController < ApplicationController
   def create
     patient = current_user.patients.build(patient_params)
     patient.role = :client
-    patient.password = Devise.friendly_token.first(8)
+    generated_password = Devise.friendly_token.first(8)
+    patient.password = generated_password
+    patient.must_change_password = true
 
     ActiveRecord::Base.transaction do
       patient.save!
@@ -23,16 +25,13 @@ class Therapists::PatientsController < ApplicationController
       build_weekly_schedules(patient)
 
       case params[:schedule_type]
-
       when "weekly"
         create_weekly_sessions(patient)
-
       when "single"
         create_single_session(patient)
-
       end
 
-      render json: patient_json(patient), status: :created
+      render json: patient_json(patient).merge({ generated_password: generated_password }), status: :created
     end
 
   rescue ActiveRecord::RecordInvalid => e
