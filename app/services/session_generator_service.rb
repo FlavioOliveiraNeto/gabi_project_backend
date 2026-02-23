@@ -3,22 +3,19 @@ class SessionGeneratorService
     @therapist = therapist
   end
 
-  def generate_for_next_month
+  def generate_for_current_and_next_month
     @therapist.patients.includes(:weekly_schedules).find_each do |patient|
       patient.weekly_schedules.each do |schedule|
-        generate_for_schedule(patient, schedule)
+        generate_for_schedule(patient, schedule, Date.current.beginning_of_month, Date.current.end_of_month)
+        generate_for_schedule(patient, schedule, Date.current.next_month.beginning_of_month, Date.current.next_month.end_of_month)
       end
     end
   end
 
   private
 
-  def generate_for_schedule(patient, schedule)
-    start_date = Date.current
-    end_date   = start_date + 1.month
-
+  def generate_for_schedule(patient, schedule, start_date, end_date)
     hour, min = schedule.time.split(":")
-
     weekday_int = schedule.weekday_before_type_cast
 
     (start_date..end_date).each do |date|
@@ -32,7 +29,7 @@ class SessionGeneratorService
         min.to_i
       )
 
-      patient.sessions.find_or_create_by!(scheduled_at: datetime) do |session|
+      patient.sessions.find_or_create_by!(scheduled_at: datetime, session_type: :regular) do |session|
         session.status = :scheduled
       end
     end
