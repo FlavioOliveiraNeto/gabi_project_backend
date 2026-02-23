@@ -3,7 +3,8 @@ class Clients::PatientNotesController < ApplicationController
   before_action :ensure_client!
 
   def index
-    render json: current_user.patient_notes
+    notes = current_user.patient_notes.order(created_at: :desc)
+    render json: notes
   end
 
   def create
