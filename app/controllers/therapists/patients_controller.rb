@@ -41,18 +41,32 @@ class Therapists::PatientsController < ApplicationController
 
   def update
     ActiveRecord::Base.transaction do
-      if @patient.update(patient_params)
-        if params[:weekdays].present?
-          @patient.weekly_schedules.destroy_all
-          build_weekly_schedules(@patient)
-        end
-        @patient.reload
-        render json: patient_json(@patient)
-      else
-        render json: { errors: @patient.errors.full_messages }, status: :unprocessable_entity
-        raise ActiveRecord::Rollback
+      @patient.update!(patient_params)
+
+      case params[:schedule_type]
+
+      when "weekly"
+        @patient.sessions.destroy_all
+
+        @patient.weekly_schedules.destroy_all
+
+        build_weekly_schedules(@patient)
+
+        create_weekly_sessions(@patient)
+      when "single"
+        @patient.weekly_schedules.destroy_all
+
+        @patient.sessions.destroy_all
+
+        create_single_session(@patient)
       end
+
+      @patient.reload
+      render json: patient_json(@patient)
     end
+
+  rescue ActiveRecord::RecordInvalid => e
+    render json: { errors: e.record.errors.full_messages }, status: :unprocessable_entity
   end
 
   def destroy
