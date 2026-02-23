@@ -30,18 +30,6 @@ class Therapists::SessionsController < ApplicationController
     end
   end
 
-  def mark_absent
-    session = Session.find(params[:id])
-
-    unless session.user.therapist_id == current_user.id
-      return head :forbidden
-    end
-
-    session.update!(status: :absent)
-
-    render json: { success: true }
-  end
-
   private
 
   def ensure_therapist!
