@@ -12,7 +12,7 @@ Rails.application.routes.draw do
   # Dashboard e recursos do paciente
   namespace :clients do
     get :dashboard, to: "dashboard#index"
-    resources :patient_notes, only: %i[index create destroy]
+    resources :patient_notes, only: %i[index create update destroy]
     resources :sessions, only: %i[index]
   end
 

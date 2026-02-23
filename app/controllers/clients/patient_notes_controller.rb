@@ -16,6 +16,16 @@ class Clients::PatientNotesController < ApplicationController
     end
   end
 
+
+  def update
+    note = current_user.patient_notes.find(params[:id])
+    if note.update(note_params)
+      render json: note
+    else
+      render json: { errors: note.errors.full_messages }, status: :unprocessable_entity
+    end
+  end
+
   def destroy
     note = current_user.patient_notes.find(params[:id])
     note.destroy

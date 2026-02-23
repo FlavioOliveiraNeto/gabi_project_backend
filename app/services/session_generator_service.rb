@@ -21,6 +21,8 @@ class SessionGeneratorService
     (start_date..end_date).each do |date|
       next unless date.wday == weekday_int
 
+      next if date < Date.current
+
       datetime = Time.zone.local(
         date.year,
         date.month,
