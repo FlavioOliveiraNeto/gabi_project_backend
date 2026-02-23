@@ -1,3 +1,4 @@
+  put "/users/change_password", to: "users/passwords#update"
 Rails.application.routes.draw do
   devise_for :users,
     defaults: { format: :json },
