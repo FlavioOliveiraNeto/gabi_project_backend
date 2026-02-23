@@ -18,14 +18,25 @@ class Therapists::PatientsController < ApplicationController
     patient.password = Devise.friendly_token.first(8)
 
     ActiveRecord::Base.transaction do
-      if patient.save
-        build_weekly_schedules(patient)
-        render json: patient_json(patient), status: :created
-      else
-        render json: { errors: patient.errors.full_messages }, status: :unprocessable_entity
-        raise ActiveRecord::Rollback
+      patient.save!
+
+      build_weekly_schedules(patient)
+
+      case params[:schedule_type]
+
+      when "weekly"
+        create_weekly_sessions(patient)
+
+      when "single"
+        create_single_session(patient)
+
       end
+
+      render json: patient_json(patient), status: :created
     end
+
+  rescue ActiveRecord::RecordInvalid => e
+    render json: { errors: e.record.errors.full_messages }, status: :unprocessable_entity
   end
 
   def update
@@ -76,6 +87,60 @@ class Therapists::PatientsController < ApplicationController
         time: session_time
       )
     end
+  end
+
+  def next_weekday_time(weekday_str, time_str)
+    return nil unless time_str.present?
+
+    weekdays = {
+      "sunday" => 0, "monday" => 1, "tuesday" => 2, "wednesday" => 3,
+      "thursday" => 4, "friday" => 5, "saturday" => 6
+    }
+
+    target_wday = weekdays[weekday_str.to_s.downcase]
+
+    return nil if target_wday.nil?
+
+    now = Time.zone.now
+    hour, min = time_str.split(":").map(&:to_i)
+    date = now.to_date
+    days_ahead = (target_wday - date.wday) % 7
+    days_ahead = 7 if days_ahead == 0
+    next_date = date + days_ahead
+    Time.zone.local(next_date.year, next_date.month, next_date.day, hour, min)
+  end
+
+  def create_weekly_sessions(patient)
+    return unless params[:weekdays].is_a?(Array)
+    return unless params[:session_time].present?
+
+    params[:weekdays].each do |weekday|
+      scheduled_at = next_weekday_time(weekday, params[:session_time])
+      next unless scheduled_at
+
+      patient.sessions.create!(
+        scheduled_at: scheduled_at,
+        status: :scheduled,
+        session_type: :regular
+      )
+    end
+  end
+
+  def create_single_session(patient)
+    return unless params[:single_date].present?
+    return unless params[:single_time].present?
+
+    scheduled_at = Time.zone.parse(
+      "#{params[:single_date]} #{params[:single_time]}"
+    )
+
+    return unless scheduled_at
+
+    patient.sessions.create!(
+      scheduled_at: scheduled_at,
+      status: :scheduled,
+      session_type: :regular
+    )
   end
 
   def patient_json(patient)

@@ -9,6 +9,7 @@ class Therapists::DashboardController < ApplicationController
     therapist = current_user
 
     sessions = Session
+      .joins(:user)
       .includes(:user)
       .where(users: { therapist_id: therapist.id })
       .order(:scheduled_at)
@@ -42,29 +43,59 @@ class Therapists::DashboardController < ApplicationController
   end
 
   def build_patients(patients)
-    patients.includes(:weekly_schedules).map do |p|
-      schedules = p.weekly_schedules
+    patients
+      .includes(:weekly_schedules, :sessions)
+      .map do |p|
+
+      weekly_count = p.weekly_schedules.count
+      sessions = p.sessions.order(:scheduled_at)
+
+      schedule_type =
+        if weekly_count > 0
+          "weekly"
+        elsif sessions.any?
+          "single"
+        else
+          nil
+        end
 
       {
         id: p.id,
         name: p.name,
         email: p.email,
         google_meet_link: p.google_meet_link,
-        sessions_per_week: schedules.first&.sessions_per_week,
-        session_days: schedules.map(&:weekday),
-        session_time: schedules.first&.time,
-        completed_sessions: p.sessions.where(status: :completed).count,
-        absent_sessions: p.sessions.where(status: :absent).count
+
+        schedule_type: schedule_type,
+
+        sessions_per_week: weekly_count > 0 ? p.weekly_schedules.first.sessions_per_week : nil,
+
+        session_days: weekly_count > 0 ? p.weekly_schedules.pluck(:weekday) : [],
+        
+        session_time: weekly_count > 0 ? p.weekly_schedules.first.time : nil,
+
+        single_sessions: weekly_count == 0 ? sessions.map do |s|
+          local_time = s.scheduled_at.in_time_zone(Time.zone)
+          {
+            id: s.id,
+            date: local_time.to_date.iso8601,
+            time: local_time.strftime("%H:%M"),
+            status: s.status
+          }
+        end : [],
+
+        completed_sessions: sessions.where(status: :completed).count,
+        absent_sessions: sessions.where(status: :absent).count
       }
     end
   end
 
   def build_calendar_sessions(sessions)
     sessions.map do |s|
+      local_time = s.scheduled_at.in_time_zone(Time.zone)
       {
         id: s.id,
-        date: s.scheduled_at.to_date.iso8601,
-        time: s.scheduled_at.strftime("%H:%M"),
+        date: local_time.to_date.iso8601,
+        time: local_time.strftime("%H:%M"),
         status: s.status,
         patient: {
           id: s.user.id,
