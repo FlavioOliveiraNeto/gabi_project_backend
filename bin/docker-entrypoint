@@ -1,8 +1,16 @@
-#!/bin/bash -e
+#!/bin/bash
+set -e
 
-# If running the rails server then create or migrate existing database
-if [ "${@: -2:1}" == "./bin/rails" ] && [ "${@: -1:1}" == "server" ]; then
-  ./bin/rails db:prepare
+echo "🚀 Docker entrypoint iniciado"
+
+if [ "$1" = "bin/rails" ] && [ "$2" = "server" ]; then
+  echo "⏳ Aguardando Postgres..."
+  until pg_isready -h db -p 5432; do
+    sleep 2
+  done
+
+  echo "✅ Postgres disponível"
+  bin/rails db:prepare
 fi
 
-exec "${@}"
+exec "$@"

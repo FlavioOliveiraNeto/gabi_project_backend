@@ -51,6 +51,7 @@ group :development, :test do
   gem 'shoulda-matchers'
   gem 'database_cleaner-active_record'
   gem 'simplecov'
+  gem 'byebug'
 end
 
 gem 'devise'
@@ -59,3 +60,5 @@ gem 'pundit'
 gem 'rack-attack'
 gem "rack-cors"
 gem 'secure_headers'
+gem "sidekiq"
+gem "sidekiq-cron"

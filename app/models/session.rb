@@ -13,4 +13,12 @@ class Session < ApplicationRecord
     extra: 1,
     emergency: 2
   }
+
+  private 
+
+  def self.auto_complete_past_sessions!
+    where(status: :scheduled)
+      .where("scheduled_at < ?", Time.current)
+      .update_all(status: Session.statuses[:completed])
+  end
 end

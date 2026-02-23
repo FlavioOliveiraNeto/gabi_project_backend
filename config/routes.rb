@@ -21,6 +21,10 @@ Rails.application.routes.draw do
     resources :patients, only: %i[index show create update destroy] do
       resources :notes, only: %i[create], controller: "clinical_notes", as: :clinical_notes
     end
-    resources :sessions, only: %i[create update]
+    resources :sessions, only: %i[create update] do
+      member do
+        patch :mark_absent
+      end
+    end
   end
 end

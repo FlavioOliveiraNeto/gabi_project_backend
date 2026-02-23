@@ -1,0 +1,5 @@
+generate_weekly_sessions:
+  cron: "0 0 * * 0"
+  class: "WeeklySessionGenerationJob"
+  queue: default
+  description: "Generate weekly sessions every Sunday at midnight"

@@ -4,63 +4,74 @@ class Therapists::DashboardController < ApplicationController
 
   def index
     authorize :therapist
+    Session.auto_complete_past_sessions!
 
-    patients = current_user.patients
-                          .includes(:clinical_notes, :sessions, :weekly_schedules)
-                          .order(created_at: :desc)
+    therapist = current_user
 
-    today_weekday = Date.current.wday
+    sessions = Session
+      .includes(:user)
+      .where(users: { therapist_id: therapist.id })
+      .order(:scheduled_at)
 
-    by_weekday_ids = patients.joins(:weekly_schedules)
-                             .where(weekly_schedules: { weekday: today_weekday })
-                             .distinct
-                             .pluck(:id)
-
-    by_session_ids = Session
-      .joins(:user)
-      .where(users: { therapist_id: current_user.id })
-      .where(status: :scheduled)
-      .where(scheduled_at: Time.zone.now.all_day)
-      .pluck(:user_id)
-
-    today_sessions = (by_weekday_ids + by_session_ids).uniq.count
-
-    sessions_this_week = Session
-      .joins(:user)
-      .where(users: { therapist_id: current_user.id })
-      .where(scheduled_at: Time.zone.now.all_week)
-      .count
-
-    stats = {
-      active_clients: patients.count,
-      today_sessions: today_sessions,
-      sessions_this_week: sessions_this_week
-    }
+    patients = User
+      .where(therapist_id: therapist.id)
+      .distinct
 
     render json: {
-      clients: patients.map { |p| patient_json(p) },
-      stats: stats
+      stats: build_stats(therapist),
+      patients: build_patients(patients),
+      calendar_sessions: build_calendar_sessions(sessions)
     }
   end
 
   private
 
-  def patient_json(patient)
-    schedules = patient.weekly_schedules
+  def build_stats(therapist)
+    sessions = Session.joins(:user)
+                      .where(users: { therapist_id: therapist.id })
+
     {
-      id: patient.id,
-      name: patient.name,
-      email: patient.email,
-      google_meet_link: patient.google_meet_link,
-      created_at: patient.created_at,
-      sessions_per_week: schedules.first&.sessions_per_week || 0,
-      session_days: schedules.map(&:weekday),
-      session_time: schedules.first&.time,
-      completed_sessions: patient.sessions.where(status: "completed").count,
-      absent_sessions: patient.sessions.where(status: "absent").count,
-      clinical_notes: patient.clinical_notes.sort_by(&:created_at).reverse.map do |n|
-        { id: n.id, content: n.content, date: n.date, created_at: n.created_at }
-      end
+      active_clients: therapist.patients.count,
+      sessions_today: sessions.where(scheduled_at: Time.zone.now.all_day).count,
+      sessions_this_week: sessions.where(scheduled_at: Time.zone.now.all_week).count,
+      sessions_completed_this_week: sessions
+        .where(status: :completed)
+        .where(scheduled_at: Time.zone.now.all_week)
+        .count
     }
+  end
+
+  def build_patients(patients)
+    patients.includes(:weekly_schedules).map do |p|
+      schedules = p.weekly_schedules
+
+      {
+        id: p.id,
+        name: p.name,
+        email: p.email,
+        google_meet_link: p.google_meet_link,
+        sessions_per_week: schedules.first&.sessions_per_week,
+        session_days: schedules.map(&:weekday),
+        session_time: schedules.first&.time,
+        completed_sessions: p.sessions.where(status: :completed).count,
+        absent_sessions: p.sessions.where(status: :absent).count
+      }
+    end
+  end
+
+  def build_calendar_sessions(sessions)
+    sessions.map do |s|
+      {
+        id: s.id,
+        date: s.scheduled_at.to_date.iso8601,
+        time: s.scheduled_at.strftime("%H:%M"),
+        status: s.status,
+        patient: {
+          id: s.user.id,
+          name: s.user.name,
+          google_meet_link: s.user.google_meet_link
+        }
+      }
+    end
   end
 end
