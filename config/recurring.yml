@@ -1,15 +1,28 @@
-# examples:
-#   periodic_cleanup:
-#     class: CleanSoftDeletedRecordsJob
-#     queue: background
-#     args: [ 1000, { batch_size: 500 } ]
-#     schedule: every hour
-#   periodic_cleanup_with_command:
-#     command: "SoftDeletedRecord.due.delete_all"
-#     priority: 2
-#     schedule: at 5am every day
+default: &default
+  auto_complete_sessions:
+    class: AutoCompleteSessionsJob
+    schedule: "0 * * * *"
+    queue: default
+    description: "Marca sessões regulares passadas como completadas (roda a cada hora)"
+
+  generate_weekly_sessions:
+    class: WeeklySessionGenerationJob
+    schedule: "0 0 1 * *"
+    queue: default
+    description: "Gera sessões semanais no primeiro dia de cada mês à meia-noite"
+
+  cleanup_jwt_denylist:
+    class: CleanupJwtDenylistJob
+    schedule: "0 3 * * *"
+    queue: default
+    description: "Remove entradas expiradas da JWT denylist (roda diariamente às 3h)"
+
+development:
+  <<: *default
 
 production:
+  <<: *default
   clear_solid_queue_finished_jobs:
     command: "SolidQueue::Job.clear_finished_in_batches(sleep_between_batches: 0.3)"
-    schedule: every hour at minute 12
+    schedule: "12 * * * *"
+    description: "Remove jobs finalizados do SolidQueue (roda a cada hora no minuto 12)"

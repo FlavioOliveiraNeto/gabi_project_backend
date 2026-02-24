@@ -31,11 +31,12 @@ class Users::PasswordsController < ApplicationController
     return unless auth_header&.start_with?("Bearer ")
 
     token = auth_header.split(" ").last
-    payload, = JWT.decode(token, nil, false)
+    secret = Rails.application.credentials.devise_jwt_secret_key || "temporary_build_key"
+    payload, = JWT.decode(token, secret, true, algorithms: ["HS256"])
     return unless payload["jti"].present?
 
     JwtDenylist.revoke_jwt(payload, current_user)
   rescue JWT::DecodeError
-    # token malformado — nada a revogar
+    # token malformado ou assinatura inválida — nada a revogar
   end
 end

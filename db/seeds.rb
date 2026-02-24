@@ -136,6 +136,7 @@ names.each_with_index do |name, index|
   rand(1..3).times do
     ClinicalNote.create!(
       user: client,
+      therapist: therapist,
       date: rand(1..20).days.ago,
       content: "Paciente relatou progresso na última sessão."
     )

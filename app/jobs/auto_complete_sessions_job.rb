@@ -1,5 +1,5 @@
-class AutoCompleteSessionsJob
-  include Sidekiq::Job
+class AutoCompleteSessionsJob < ApplicationJob
+  queue_as :default
 
   def perform
     Rails.logger.info "⏰ Auto-completando sessões passadas..."

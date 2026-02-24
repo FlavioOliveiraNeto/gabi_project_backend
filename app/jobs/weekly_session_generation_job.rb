@@ -1,5 +1,5 @@
-class WeeklySessionGenerationJob
-  include Sidekiq::Job
+class WeeklySessionGenerationJob < ApplicationJob
+  queue_as :default
 
   def perform
     Rails.logger.info "⏰ Gerando sessões semanais para mês atual e próximo..."

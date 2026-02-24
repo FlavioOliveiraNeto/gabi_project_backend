@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_02_24_180000) do
+ActiveRecord::Schema[8.1].define(version: 2026_02_24_190002) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -18,8 +18,10 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_24_180000) do
     t.text "content"
     t.datetime "created_at", null: false
     t.datetime "date"
+    t.bigint "therapist_id", null: false
     t.datetime "updated_at", null: false
     t.bigint "user_id", null: false
+    t.index ["therapist_id"], name: "index_clinical_notes_on_therapist_id"
     t.index ["user_id"], name: "index_clinical_notes_on_user_id"
   end
 
@@ -41,7 +43,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_24_180000) do
 
   create_table "sessions", force: :cascade do |t|
     t.datetime "created_at", null: false
-    t.datetime "scheduled_at"
+    t.datetime "scheduled_at", null: false
     t.integer "session_type", default: 0, null: false
     t.integer "status"
     t.datetime "updated_at", null: false
@@ -80,6 +82,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_24_180000) do
   end
 
   add_foreign_key "clinical_notes", "users"
+  add_foreign_key "clinical_notes", "users", column: "therapist_id"
   add_foreign_key "patient_notes", "users"
   add_foreign_key "sessions", "users"
   add_foreign_key "users", "users", column: "therapist_id"

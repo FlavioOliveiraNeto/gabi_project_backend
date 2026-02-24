@@ -60,5 +60,3 @@ gem 'pundit'
 gem 'rack-attack'
 gem "rack-cors"
 gem 'secure_headers'
-gem "sidekiq"
-gem "sidekiq-cron"

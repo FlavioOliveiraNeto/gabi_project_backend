@@ -5,10 +5,14 @@ class SessionGeneratorService
 
   def generate_for_current_and_next_month
     @therapist.patients.includes(:weekly_schedules).find_each do |patient|
-      patient.weekly_schedules.each do |schedule|
-        generate_for_schedule(patient, schedule, Date.current.beginning_of_month, Date.current.end_of_month)
-        generate_for_schedule(patient, schedule, Date.current.next_month.beginning_of_month, Date.current.next_month.end_of_month)
-      end
+      generate_for_patient(patient)
+    end
+  end
+
+  def generate_for_patient(patient)
+    patient.weekly_schedules.each do |schedule|
+      generate_for_schedule(patient, schedule, Date.current.beginning_of_month, Date.current.end_of_month)
+      generate_for_schedule(patient, schedule, Date.current.next_month.beginning_of_month, Date.current.next_month.end_of_month)
     end
   end
 

@@ -26,7 +26,7 @@ class Therapists::PatientsController < ApplicationController
 
       case params[:schedule_type]
       when "weekly"
-        create_weekly_sessions(patient)
+        SessionGeneratorService.new(current_user).generate_for_patient(patient)
       when "single"
         create_single_session(patient)
       end
@@ -45,17 +45,23 @@ class Therapists::PatientsController < ApplicationController
       case params[:schedule_type]
 
       when "weekly"
-        @patient.sessions.where(session_type: :regular).destroy_all
+        @patient.sessions
+                .where(session_type: :regular)
+                .where("scheduled_at >= ?", Time.current)
+                .update_all(status: Session.statuses[:cancelled])
 
         @patient.weekly_schedules.destroy_all
 
         build_weekly_schedules(@patient)
 
-        create_weekly_sessions(@patient)
+        SessionGeneratorService.new(current_user).generate_for_patient(@patient)
       when "single"
         @patient.weekly_schedules.destroy_all
 
-        @patient.sessions.where(session_type: :regular).destroy_all
+        @patient.sessions
+                .where(session_type: :regular)
+                .where("scheduled_at >= ?", Time.current)
+                .update_all(status: Session.statuses[:cancelled])
 
         create_single_session(@patient)
       end
@@ -158,17 +164,28 @@ class Therapists::PatientsController < ApplicationController
 
   def patient_json(patient)
     schedules = patient.weekly_schedules
+    weekly_count = schedules.count
+    sessions = patient.sessions
+
+    schedule_type =
+      if weekly_count > 0
+        "weekly"
+      elsif sessions.any?
+        "single"
+      end
+
     {
       id: patient.id,
       name: patient.name,
       email: patient.email,
       google_meet_link: patient.google_meet_link,
       created_at: patient.created_at,
+      schedule_type: schedule_type,
       sessions_per_week: schedules.first&.sessions_per_week || 0,
       session_days: schedules.map(&:weekday),
       session_time: schedules.first&.time,
-      completed_sessions: patient.sessions.where(status: :completed).count,
-      absent_sessions: patient.sessions.where(status: :absent).count,
+      completed_sessions: sessions.where(status: :completed).count,
+      absent_sessions: sessions.where(status: :absent).count,
       clinical_notes: patient.clinical_notes.order(created_at: :desc).map do |n|
         { id: n.id, content: n.content, date: n.date, created_at: n.created_at }
       end

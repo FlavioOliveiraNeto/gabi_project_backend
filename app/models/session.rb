@@ -13,9 +13,11 @@ class Session < ApplicationRecord
     extra: 1
   }
 
+  validates :scheduled_at, presence: true
+
   def self.auto_complete_past_sessions!
-    where(status: :scheduled)
-      .where("scheduled_at < ?", Time.current)
+    where(status: :scheduled, session_type: :regular)
+      .where("scheduled_at <= ?", 1.hour.ago)
       .update_all(status: Session.statuses[:completed])
   end
 end

@@ -4,6 +4,16 @@ class Therapists::SessionsController < ApplicationController
 
   ALLOWED_SESSION_TYPES = %w[regular extra].freeze
 
+  ALLOWED_STATUSES = %w[scheduled completed absent cancelled].freeze
+
+  # Transições de status permitidas por estado atual
+  ALLOWED_TRANSITIONS = {
+    "scheduled" => %w[completed absent cancelled],
+    "completed" => %w[absent cancelled],
+    "absent"    => %w[cancelled],
+    "cancelled" => []
+  }.freeze
+
   def create
     patient = current_user.patients.find(params[:patient_id])
 
@@ -31,7 +41,22 @@ class Therapists::SessionsController < ApplicationController
                      .where(users: { therapist_id: current_user.id })
                      .find(params[:id])
 
-    if session.update(status: params[:status])
+    new_status = params[:status].to_s
+
+    unless ALLOWED_STATUSES.include?(new_status)
+      render json: { error: "Status inválido. Use: #{ALLOWED_STATUSES.join(', ')}." }, status: :unprocessable_entity
+      return
+    end
+
+    allowed_next = ALLOWED_TRANSITIONS[session.status]
+    unless allowed_next.include?(new_status)
+      render json: {
+        error: "Transição inválida: sessão '#{session.status}' não pode ser alterada para '#{new_status}'."
+      }, status: :unprocessable_entity
+      return
+    end
+
+    if session.update(status: new_status)
       render json: session
     else
       render json: { errors: session.errors.full_messages }, status: :unprocessable_entity

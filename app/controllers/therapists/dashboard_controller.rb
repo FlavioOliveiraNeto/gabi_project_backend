@@ -1,10 +1,8 @@
 class Therapists::DashboardController < ApplicationController
   before_action :authenticate_user!
-  after_action :verify_authorized
+  before_action :ensure_therapist!
 
   def index
-    authorize :therapist
-
     therapist = current_user
 
     sessions = Session
@@ -25,6 +23,10 @@ class Therapists::DashboardController < ApplicationController
   end
 
   private
+
+  def ensure_therapist!
+    render json: { error: "Acesso restrito." }, status: :forbidden unless current_user.therapist?
+  end
 
   def build_stats(therapist)
     sessions = Session.joins(:user)
@@ -100,6 +102,7 @@ class Therapists::DashboardController < ApplicationController
         date: local_time.to_date.iso8601,
         time: local_time.strftime("%H:%M"),
         status: s.status,
+        session_type: s.session_type,
         patient: {
           id: s.user.id,
           name: s.user.name,

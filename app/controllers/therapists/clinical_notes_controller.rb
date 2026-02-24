@@ -13,7 +13,8 @@ class Therapists::ClinicalNotesController < ApplicationController
   def create
     note = @patient.clinical_notes.build(
       content: params[:content],
-      date: Time.current
+      date: Time.current,
+      therapist: current_user
     )
 
     if note.save
