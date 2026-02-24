@@ -2,13 +2,21 @@ class Therapists::SessionsController < ApplicationController
   before_action :authenticate_user!
   before_action :ensure_therapist!
 
+  ALLOWED_SESSION_TYPES = %w[regular extra].freeze
+
   def create
     patient = current_user.patients.find(params[:patient_id])
+
+    requested_type = params[:session_type].to_s
+    unless requested_type.empty? || ALLOWED_SESSION_TYPES.include?(requested_type)
+      render json: { error: "Tipo de sessão inválido. Use 'regular' ou 'extra'." }, status: :unprocessable_entity
+      return
+    end
 
     session = patient.sessions.build(
       scheduled_at: params[:scheduled_at],
       status: :scheduled,
-      session_type: params[:session_type].presence || :regular
+      session_type: requested_type.presence || :regular
     )
 
     if session.save

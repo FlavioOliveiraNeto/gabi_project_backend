@@ -10,4 +10,10 @@ class WeeklySchedule < ApplicationRecord
     friday: 5,
     saturday: 6
   }
+
+  validates :weekday, presence: true
+  validates :time, presence: true, format: {
+    with: /\A([01]\d|2[0-3]):[0-5]\d\z/,
+    message: "deve estar no formato HH:MM (ex: 14:30)"
+  }
 end

@@ -34,6 +34,8 @@ module GabiProjectBackend
     # These settings can be overridden in specific environments using the files
     # in config/environments, which are processed later.
     #
+    config.middleware.use Rack::Attack
+
     config.time_zone = "Brasilia"
     config.active_record.default_timezone = :local
     # config.eager_load_paths << Rails.root.join("extras")

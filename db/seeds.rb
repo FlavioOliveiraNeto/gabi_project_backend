@@ -1,12 +1,23 @@
-puts "Iniciando seed..."
+puts "🚀 Iniciando seed..."
 
-ClinicalNote.destroy_all
-WeeklySchedule.destroy_all
-PatientNote.destroy_all
-Session.destroy_all
-User.destroy_all
+# =========================
+# LIMPEZA SEGURA (ORDEM IMPORTA)
+# =========================
 
-puts "Banco limpo!"
+ClinicalNote.delete_all
+PatientNote.delete_all
+WeeklySchedule.delete_all
+Session.delete_all
+User.delete_all
+
+puts "🧹 Banco limpo!"
+
+# =========================
+# CONFIGURAÇÕES
+# =========================
+
+WEEKS_PAST   = 4
+WEEKS_FUTURE = 4
 
 # =========================
 # TERAPEUTA
@@ -20,16 +31,11 @@ therapist = User.create!(
   role: :therapist
 )
 
-puts "Terapeuta criada!"
+puts "👩‍⚕️ Terapeuta criada!"
 
 # =========================
-# CONFIGURAÇÕES
+# PACIENTES
 # =========================
-
-WEEKS_PAST = 4
-WEEKS_FUTURE = 4
-
-weekday_numbers = WeeklySchedule.weekdays
 
 names = [
   "Ana Beatriz Oliveira",
@@ -47,26 +53,30 @@ names = [
   "Marcos Pereira"
 ]
 
-# =========================
-# CRIAÇÃO DE PACIENTES
-# =========================
+weekday_numbers = WeeklySchedule.weekdays
 
 names.each_with_index do |name, index|
+
   client = User.create!(
     name: name,
     email: "paciente#{index + 1}@email.com",
     password: "password123",
     password_confirmation: "password123",
     role: :client,
-    google_meet_link: index.even? ? "https://meet.google.com/test-#{index}" : nil,
-    therapist: therapist
+    therapist: therapist,
+    google_meet_link: index.even? ? "https://meet.google.com/test-#{index}" : nil
   )
 
-  puts "Paciente criado: #{client.name}"
+  puts "👤 Paciente criado: #{client.name}"
 
-  # Define dias aleatórios da semana
+  # Define 1 ou 2 dias fixos
   weekdays = WeeklySchedule.weekdays.keys.sample(rand(1..2))
-  time = "#{rand(8..19)}:00"
+  hour     = rand(8..19)
+  time     = format("%02d:00", hour)
+
+  # =========================
+  # CRIA AGENDA FIXA
+  # =========================
 
   weekdays.each do |weekday|
     client.weekly_schedules.create!(
@@ -77,50 +87,45 @@ names.each_with_index do |name, index|
   end
 
   # =========================
-  # GERA SESSÕES BASEADAS NA AGENDA
+  # GERA SESSÕES SEM DUPLICAR
   # =========================
 
-  schedules = client.weekly_schedules
-
-  schedules.each do |schedule|
+  client.weekly_schedules.each do |schedule|
     weekday_number = weekday_numbers[schedule.weekday]
+
+    generate_session = lambda do |date, status|
+      datetime = Time.zone.parse("#{date} #{schedule.time}")
+
+      Session.find_or_create_by!(
+        user: client,
+        scheduled_at: datetime,
+        session_type: :regular
+      ) do |s|
+        s.status = status
+      end
+    end
 
     # PASSADO
     (1..WEEKS_PAST).each do |w|
       date = Date.today - w.weeks
       target_date = date.beginning_of_week + weekday_number
-
       next if target_date > Date.today
 
       status = rand < 0.85 ? :completed : :absent
-
-      Session.create!(
-        user: client,
-        scheduled_at: Time.zone.parse("#{target_date} #{schedule.time}"),
-        status: status
-      )
+      generate_session.call(target_date, status)
     end
 
     # SEMANA ATUAL
     current_week_date = Date.today.beginning_of_week + weekday_number
     if current_week_date >= Date.today
-      Session.create!(
-        user: client,
-        scheduled_at: Time.zone.parse("#{current_week_date} #{schedule.time}"),
-        status: :scheduled
-      )
+      generate_session.call(current_week_date, :scheduled)
     end
 
     # FUTURO
     (1..WEEKS_FUTURE).each do |w|
       date = Date.today + w.weeks
       target_date = date.beginning_of_week + weekday_number
-
-      Session.create!(
-        user: client,
-        scheduled_at: Time.zone.parse("#{target_date} #{schedule.time}"),
-        status: :scheduled
-      )
+      generate_session.call(target_date, :scheduled)
     end
   end
 
@@ -137,5 +142,7 @@ names.each_with_index do |name, index|
   end
 end
 
-puts "Seed profissional concluído!"
-puts "Total de sessões criadas: #{Session.count}"
+puts "✅ Seed concluído com sucesso!"
+puts "👥 Total usuários: #{User.count}"
+puts "📅 Total sessões: #{Session.count}"
+puts "📝 Total notas clínicas: #{ClinicalNote.count}"

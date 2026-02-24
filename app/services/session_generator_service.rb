@@ -15,6 +15,8 @@ class SessionGeneratorService
   private
 
   def generate_for_schedule(patient, schedule, start_date, end_date)
+    return if schedule.time.blank?
+
     hour, min = schedule.time.split(":")
     weekday_int = schedule.weekday_before_type_cast
 

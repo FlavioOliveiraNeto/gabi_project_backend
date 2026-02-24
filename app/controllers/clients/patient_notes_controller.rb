@@ -1,6 +1,7 @@
 class Clients::PatientNotesController < ApplicationController
   before_action :authenticate_user!
   before_action :ensure_client!
+  before_action :enforce_password_change!
 
   def index
     notes = current_user.patient_notes.order(created_at: :desc)

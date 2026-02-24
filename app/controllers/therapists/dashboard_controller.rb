@@ -4,7 +4,6 @@ class Therapists::DashboardController < ApplicationController
 
   def index
     authorize :therapist
-    Session.auto_complete_past_sessions!
 
     therapist = current_user
 
@@ -44,7 +43,7 @@ class Therapists::DashboardController < ApplicationController
 
   def build_patients(patients)
     patients
-      .includes(:weekly_schedules, :sessions)
+      .includes(:weekly_schedules, :sessions, :clinical_notes)
       .map do |p|
 
       weekly_count = p.weekly_schedules.count
@@ -70,7 +69,7 @@ class Therapists::DashboardController < ApplicationController
         sessions_per_week: weekly_count > 0 ? p.weekly_schedules.first.sessions_per_week : nil,
 
         session_days: weekly_count > 0 ? p.weekly_schedules.pluck(:weekday) : [],
-        
+
         session_time: weekly_count > 0 ? p.weekly_schedules.first.time : nil,
 
         single_sessions: weekly_count == 0 ? sessions.map do |s|
@@ -84,7 +83,11 @@ class Therapists::DashboardController < ApplicationController
         end : [],
 
         completed_sessions: sessions.where(status: :completed).count,
-        absent_sessions: sessions.where(status: :absent).count
+        absent_sessions: sessions.where(status: :absent).count,
+
+        clinical_notes: p.clinical_notes.order(created_at: :desc).map do |n|
+          { id: n.id, content: n.content, date: n.date, created_at: n.created_at }
+        end
       }
     end
   end

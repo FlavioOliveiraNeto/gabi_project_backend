@@ -45,7 +45,7 @@ class Therapists::PatientsController < ApplicationController
       case params[:schedule_type]
 
       when "weekly"
-        @patient.sessions.destroy_all
+        @patient.sessions.where(session_type: :regular).destroy_all
 
         @patient.weekly_schedules.destroy_all
 
@@ -55,7 +55,7 @@ class Therapists::PatientsController < ApplicationController
       when "single"
         @patient.weekly_schedules.destroy_all
 
-        @patient.sessions.destroy_all
+        @patient.sessions.where(session_type: :regular).destroy_all
 
         create_single_session(@patient)
       end
@@ -152,7 +152,7 @@ class Therapists::PatientsController < ApplicationController
     patient.sessions.create!(
       scheduled_at: scheduled_at,
       status: :scheduled,
-      session_type: :regular
+      session_type: :extra
     )
   end
 
@@ -167,9 +167,9 @@ class Therapists::PatientsController < ApplicationController
       sessions_per_week: schedules.first&.sessions_per_week || 0,
       session_days: schedules.map(&:weekday),
       session_time: schedules.first&.time,
-      completed_sessions: patient.sessions.count { |s| s.status == "completed" },
-      absent_sessions: patient.sessions.count { |s| s.status == "absent" },
-      clinical_notes: patient.clinical_notes.sort_by(&:created_at).reverse.map do |n|
+      completed_sessions: patient.sessions.where(status: :completed).count,
+      absent_sessions: patient.sessions.where(status: :absent).count,
+      clinical_notes: patient.clinical_notes.order(created_at: :desc).map do |n|
         { id: n.id, content: n.content, date: n.date, created_at: n.created_at }
       end
     }

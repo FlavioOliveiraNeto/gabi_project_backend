@@ -1,4 +1,3 @@
-  put "/users/change_password", to: "users/passwords#update"
 Rails.application.routes.draw do
   devise_for :users,
     defaults: { format: :json },
@@ -6,6 +5,10 @@ Rails.application.routes.draw do
       sessions: "users/sessions",
       registrations: "users/registrations"
     }
+
+  namespace :users do
+    put :change_password, to: "passwords#update"
+  end
 
   get "up" => "rails/health#show", as: :rails_health_check
 
@@ -20,7 +23,7 @@ Rails.application.routes.draw do
   namespace :therapists do
     get :dashboard, to: "dashboard#index"
     resources :patients, only: %i[index show create update destroy] do
-      resources :notes, only: %i[create], controller: "clinical_notes", as: :clinical_notes
+      resources :notes, only: %i[index create show update destroy], controller: "clinical_notes", as: :clinical_notes
     end
     resources :sessions, only: %i[create update]
   end

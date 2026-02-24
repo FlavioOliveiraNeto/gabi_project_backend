@@ -10,11 +10,8 @@ class Session < ApplicationRecord
 
   enum :session_type, {
     regular: 0,
-    extra: 1,
-    emergency: 2
+    extra: 1
   }
-
-  private 
 
   def self.auto_complete_past_sessions!
     where(status: :scheduled)

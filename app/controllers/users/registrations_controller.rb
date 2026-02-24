@@ -5,7 +5,10 @@ class Users::RegistrationsController < Devise::RegistrationsController
     build_resource(sign_up_params)
     resource.role = :client
 
-    therapist = User.find_by(role: :therapist)
+    # Busca a terapeuta pelo e-mail configurado em ENV, com fallback
+    # para a primeira terapeuta cadastrada (por ordem de criação).
+    therapist = User.find_by(role: :therapist, email: ENV["THERAPIST_EMAIL"]) ||
+                User.where(role: :therapist).order(:created_at).first
     resource.therapist = therapist if therapist
 
     resource.save

@@ -1,6 +1,7 @@
 class Clients::DashboardController < ApplicationController
   before_action :authenticate_user!
   before_action :ensure_client!
+  before_action :enforce_password_change!
 
   def index
     render json: {

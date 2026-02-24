@@ -18,4 +18,13 @@ class ApplicationController < ActionController::Base
       root_path
     end
   end
+
+  def enforce_password_change!
+    return unless current_user&.must_change_password?
+
+    render json: {
+      error: "É necessário trocar a senha antes de continuar.",
+      must_change_password: true
+    }, status: :forbidden
+  end
 end

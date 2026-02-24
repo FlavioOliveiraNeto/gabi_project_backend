@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_02_20_180000) do
+ActiveRecord::Schema[8.1].define(version: 2026_02_24_180000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -46,6 +46,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_20_180000) do
     t.integer "status"
     t.datetime "updated_at", null: false
     t.bigint "user_id", null: false
+    t.index ["user_id", "scheduled_at", "session_type"], name: "index_sessions_on_user_id_scheduled_at_session_type", unique: true
     t.index ["user_id"], name: "index_sessions_on_user_id"
   end
 
@@ -54,13 +55,13 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_20_180000) do
     t.string "email", default: "", null: false
     t.string "encrypted_password", default: "", null: false
     t.string "google_meet_link"
+    t.boolean "must_change_password", default: false, null: false
     t.string "name", null: false
     t.string "phone"
     t.datetime "remember_created_at"
     t.datetime "reset_password_sent_at"
     t.string "reset_password_token"
     t.integer "role", default: 0, null: false
-    t.integer "sessions_count", default: 0
     t.bigint "therapist_id"
     t.datetime "updated_at", null: false
     t.index ["email"], name: "index_users_on_email", unique: true

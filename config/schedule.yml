@@ -1,3 +1,9 @@
+auto_complete_sessions:
+  cron: "0 * * * *"
+  class: "AutoCompleteSessionsJob"
+  queue: default
+  description: "Mark past scheduled sessions as completed (runs every hour)"
+
 generate_weekly_sessions:
   cron: "0 0 1 * *"
   class: "WeeklySessionGenerationJob"
