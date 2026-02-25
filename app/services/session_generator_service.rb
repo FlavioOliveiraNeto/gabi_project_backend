@@ -33,7 +33,10 @@ class SessionGeneratorService
     from_date  = from.to_date
     window_end = Date.current.next_month.end_of_month
 
-    patient.weekly_schedules.overlapping(from_date, window_end).each do |schedule|
+    patient.weekly_schedules
+           .where("effective_from <= ?", window_end)
+           .where("effective_until IS NULL OR effective_until >= ?", from_date)
+           .each do |schedule|
       sched_start = [ from_date, schedule.effective_from ].max
       sched_end   = schedule.effective_until ? [ window_end, schedule.effective_until ].min : window_end
 

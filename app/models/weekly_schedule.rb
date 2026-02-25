@@ -27,10 +27,12 @@ class WeeklySchedule < ApplicationRecord
       .where("effective_until IS NULL OR effective_until >= ?", date)
   }
 
-  # Schedules que se sobrepõem a um intervalo de datas
+  # Schedules que se sobrepõem a um intervalo de datas.
+  # Schedules sem effective_until (abertos) são tratados como válidos somente até hoje;
+  # portanto não sobrepoem intervalos estritamente futuros.
   scope :overlapping, ->(start_date, end_date) {
     where("effective_from <= ?", end_date)
-      .where("effective_until IS NULL OR effective_until >= ?", start_date)
+      .where("COALESCE(effective_until, ?) >= ?", Date.current, start_date)
   }
 
   def active?

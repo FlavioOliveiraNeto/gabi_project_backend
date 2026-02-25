@@ -17,5 +17,9 @@ FactoryBot.define do
     trait :must_change_password do
       must_change_password { true }
     end
+
+    trait :with_meet_link do
+      google_meet_link { "https://meet.google.com/abc-defg-hij" }
+    end
   end
 end

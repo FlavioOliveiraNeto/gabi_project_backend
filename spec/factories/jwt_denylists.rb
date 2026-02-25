@@ -1,6 +1,10 @@
 FactoryBot.define do
   factory :jwt_denylist do
-    jti { "MyString" }
-    exp { "2026-02-05 16:23:46" }
+    jti { SecureRandom.uuid }
+    exp { 30.minutes.from_now }
+
+    trait :expired do
+      exp { 1.hour.ago }
+    end
   end
 end

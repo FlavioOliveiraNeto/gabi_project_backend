@@ -88,6 +88,10 @@ class ScheduleChangeService
         time:              session_time,
         effective_from:    @effective_from
       )
+    rescue ArgumentError
+      record = @patient.weekly_schedules.build
+      record.errors.add(:weekday, :invalid)
+      raise ActiveRecord::RecordInvalid.new(record)
     end
   end
 

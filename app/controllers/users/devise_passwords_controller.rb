@@ -4,15 +4,11 @@ class Users::DevisePasswordsController < Devise::PasswordsController
   # POST /users/password
   # Solicita e-mail de recuperação de senha
   def create
-    self.resource = resource_class.send_reset_password_instructions(resource_params)
+    resource_class.send_reset_password_instructions(resource_params)
 
-    if successfully_sent?(resource)
-      render json: {
-        message: "Se o e-mail informado estiver cadastrado, você receberá as instruções em breve."
-      }, status: :ok
-    else
-      render json: { errors: resource.errors.full_messages }, status: :unprocessable_entity
-    end
+    render json: {
+      message: "Se o e-mail informado estiver cadastrado, você receberá as instruções em breve."
+    }, status: :ok
   end
 
   # PUT /users/password

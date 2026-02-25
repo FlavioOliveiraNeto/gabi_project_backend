@@ -8,6 +8,11 @@ module AuthenticationHelpers
     token = response.headers["Authorization"]
     raise "Login falhou para #{user.email}: #{response.body}" if token.blank?
 
-    { "Authorization" => token, "Content-Type" => "application/json" }
+    { "Authorization" => token }
+  end
+
+  # Parse do body da resposta como JSON.
+  def json_body
+    JSON.parse(response.body)
   end
 end

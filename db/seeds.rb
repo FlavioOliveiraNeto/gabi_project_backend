@@ -78,11 +78,14 @@ names.each_with_index do |name, index|
   # CRIA AGENDA FIXA
   # =========================
 
+  effective_from = WEEKS_PAST.weeks.ago.to_date.beginning_of_week
+
   weekdays.each do |weekday|
     client.weekly_schedules.create!(
       weekday: weekday,
       sessions_per_week: weekdays.size,
-      time: time
+      time: time,
+      effective_from: effective_from
     )
   end
 

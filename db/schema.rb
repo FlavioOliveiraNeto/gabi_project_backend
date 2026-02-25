@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_02_25_000001) do
+ActiveRecord::Schema[8.1].define(version: 2026_02_25_120000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -73,12 +73,14 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_25_000001) do
 
   create_table "weekly_schedules", force: :cascade do |t|
     t.datetime "created_at", null: false
+    t.date "effective_from", null: false
+    t.date "effective_until"
     t.integer "sessions_per_week"
     t.string "time"
     t.datetime "updated_at", null: false
     t.bigint "user_id", null: false
     t.integer "weekday"
-    t.index ["user_id", "weekday", "time"], name: "index_weekly_schedules_on_user_weekday_time", unique: true
+    t.index ["user_id", "weekday", "effective_from"], name: "index_weekly_schedules_on_user_weekday_effective_from", unique: true
     t.index ["user_id"], name: "index_weekly_schedules_on_user_id"
   end
 

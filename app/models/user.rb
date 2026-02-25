@@ -5,6 +5,7 @@ class User < ApplicationRecord
          :registerable,
          :recoverable,
          :rememberable,
+         :validatable,
          :jwt_authenticatable,
          jwt_revocation_strategy: JwtDenylist
 
@@ -23,6 +24,8 @@ class User < ApplicationRecord
   has_many :clinical_notes, dependent: :destroy
   has_many :patient_notes, dependent: :destroy
   has_many :weekly_schedules, dependent: :destroy
+
+  validates :email, presence: true, uniqueness: { case_sensitive: false }
 
   validates :google_meet_link,
             format: { with: /\Ahttps?:\/\//i, message: "deve começar com http:// ou https://" },

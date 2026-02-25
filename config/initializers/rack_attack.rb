@@ -1,3 +1,5 @@
+Rack::Attack.cache.store = ActiveSupport::Cache::MemoryStore.new if Rails.env.test?
+
 class Rack::Attack
   throttle("login/ip", limit: 5, period: 1.minute) do |req|
     req.ip if req.path == "/users/sign_in" && req.post?
