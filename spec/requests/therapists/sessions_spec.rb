@@ -118,22 +118,6 @@ RSpec.describe "Therapists::Sessions", type: :request do
   # ─── PUT /therapists/sessions/:id ────────────────────────────────────────────
   describe "PUT /therapists/sessions/:id" do
     context "transições válidas" do
-      context "de scheduled para absent" do
-        let!(:session) do
-          create(:session, user: patient, status: :scheduled, scheduled_at: 1.week.from_now)
-        end
-
-        it "retorna 200 com status atualizado" do
-          put therapists_session_path(session),
-              params: { status: "absent" },
-              headers: headers,
-              as: :json
-
-          expect(response).to have_http_status(:ok)
-          expect(session.reload.status).to eq("absent")
-        end
-      end
-
       context "de scheduled para cancelled" do
         let!(:session) do
           create(:session, user: patient, status: :scheduled, scheduled_at: 1.week.from_now)
@@ -166,6 +150,22 @@ RSpec.describe "Therapists::Sessions", type: :request do
         end
       end
 
+      context "de completed para cancelled" do
+        let!(:session) do
+          create(:session, user: patient, status: :completed, scheduled_at: 1.week.ago)
+        end
+
+        it "retorna 200" do
+          put therapists_session_path(session),
+              params: { status: "cancelled" },
+              headers: headers,
+              as: :json
+
+          expect(response).to have_http_status(:ok)
+          expect(session.reload.status).to eq("cancelled")
+        end
+      end
+
       context "de absent para cancelled" do
         let!(:session) do
           create(:session, user: patient, status: :absent, scheduled_at: 1.week.ago)
@@ -183,6 +183,23 @@ RSpec.describe "Therapists::Sessions", type: :request do
     end
 
     context "transições inválidas (regra de negócio)" do
+      context "tentando marcar falta em sessão agendada (não finalizada)" do
+        let!(:session) do
+          create(:session, user: patient, status: :scheduled, scheduled_at: 1.week.from_now)
+        end
+
+        it "retorna 422 — falta só é permitida após a sessão ser finalizada" do
+          put therapists_session_path(session),
+              params: { status: "absent" },
+              headers: headers,
+              as: :json
+
+          expect(response).to have_http_status(:unprocessable_content)
+          expect(json_body["error"]).to match(/Transição inválida/)
+          expect(session.reload.status).to eq("scheduled")
+        end
+      end
+
       context "tentando marcar como completed manualmente" do
         let!(:session) do
           create(:session, user: patient, status: :scheduled, scheduled_at: 1.week.from_now)
@@ -241,7 +258,7 @@ RSpec.describe "Therapists::Sessions", type: :request do
 
       it "retorna 404" do
         put therapists_session_path(other_session),
-            params: { status: "absent" },
+            params: { status: "cancelled" },
             headers: headers,
             as: :json
 
@@ -254,8 +271,74 @@ RSpec.describe "Therapists::Sessions", type: :request do
       let!(:session) { create(:session, user: patient, status: :scheduled, scheduled_at: 1.week.from_now) }
 
       it "retorna 401" do
-        put therapists_session_path(session), params: { status: "absent" }, as: :json
+        put therapists_session_path(session), params: { status: "cancelled" }, as: :json
         expect(response).to have_http_status(:unauthorized)
+      end
+    end
+  end
+
+  # ─── DELETE /therapists/sessions/:id ─────────────────────────────────────────
+  describe "DELETE /therapists/sessions/:id" do
+    let!(:session) do
+      create(:session, user: patient, status: :scheduled, scheduled_at: 1.week.from_now)
+    end
+
+    context "excluindo sessão do próprio paciente" do
+      it "retorna 204 e remove a sessão" do
+        expect {
+          delete therapists_session_path(session), headers: headers, as: :json
+        }.to change(Session, :count).by(-1)
+
+        expect(response).to have_http_status(:no_content)
+      end
+    end
+
+    context "excluindo sessão com qualquer status" do
+      %i[completed absent cancelled].each do |status|
+        it "retorna 204 para sessão com status #{status}" do
+          session.update_column(:status, Session.statuses[status])
+
+          expect {
+            delete therapists_session_path(session), headers: headers, as: :json
+          }.to change(Session, :count).by(-1)
+
+          expect(response).to have_http_status(:no_content)
+        end
+      end
+    end
+
+    context "tentando excluir sessão de paciente de outro terapeuta (IDOR)" do
+      let(:other_therapist) { create(:user, :therapist) }
+      let!(:other_patient)  { create(:user, :client, therapist: other_therapist) }
+      let!(:other_session)  do
+        create(:session, user: other_patient, status: :scheduled, scheduled_at: 1.week.from_now)
+      end
+
+      it "retorna 404 e não exclui a sessão" do
+        expect {
+          delete therapists_session_path(other_session), headers: headers, as: :json
+        }.not_to change(Session, :count)
+
+        expect(response).to have_http_status(:not_found)
+      end
+    end
+
+    context "sem autenticação" do
+      it "retorna 401" do
+        delete therapists_session_path(session), as: :json
+        expect(response).to have_http_status(:unauthorized)
+      end
+    end
+
+    context "quando autenticado como cliente" do
+      let(:client) { create(:user, :client, therapist: therapist) }
+
+      it "retorna 403" do
+        delete therapists_session_path(session),
+               headers: auth_headers_for(client),
+               as: :json
+
+        expect(response).to have_http_status(:forbidden)
       end
     end
   end

@@ -48,14 +48,14 @@ class Therapists::DashboardController < ApplicationController
       .includes(:weekly_schedules, :sessions, :clinical_notes)
       .map do |p|
 
-      weekly_schedules = p.weekly_schedules.to_a
-      weekly_count     = weekly_schedules.count
+      all_schedules    = p.weekly_schedules.to_a
+      active_schedules = all_schedules.select(&:active?)
 
       all_sessions  = p.sessions.sort_by(&:scheduled_at)
       by_status     = all_sessions.group_by(&:status)
       extra_sessions = all_sessions.select { |s| s.session_type == "extra" }
 
-      schedule_type = weekly_count > 0 ? "regular" : "extra"
+      schedule_type = active_schedules.any? ? "regular" : "extra"
 
       {
         id: p.id,
@@ -65,11 +65,11 @@ class Therapists::DashboardController < ApplicationController
 
         schedule_type: schedule_type,
 
-        sessions_per_week: weekly_count > 0 ? weekly_schedules.first.sessions_per_week : nil,
+        sessions_per_week: active_schedules.first&.sessions_per_week,
 
-        session_days: weekly_count > 0 ? weekly_schedules.map(&:weekday) : [],
+        session_days: active_schedules.map(&:weekday),
 
-        session_time: weekly_count > 0 ? weekly_schedules.first.time : nil,
+        session_time: active_schedules.first&.time,
 
         extra_sessions: extra_sessions.map do |s|
           local_time = s.scheduled_at.in_time_zone(Time.zone)

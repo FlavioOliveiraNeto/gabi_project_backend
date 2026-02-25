@@ -21,8 +21,12 @@ default: &default
   password: postgres
 
 development:
-  <<: *default
-  database: gabi_project_backend_development
+  primary:
+    <<: *default
+    database: gabi_project_backend_development
+  queue:
+    url: <%= ENV["DATABASE_URL"] %>
+    migrations_paths: db/queue_migrate
 
 test:
   <<: *default

@@ -26,6 +26,6 @@ Rails.application.routes.draw do
     resources :patients, only: %i[index show create update destroy] do
       resources :notes, only: %i[index create show update destroy], controller: "clinical_notes", as: :clinical_notes
     end
-    resources :sessions, only: %i[create update]
+    resources :sessions, only: %i[create update destroy]
   end
 end

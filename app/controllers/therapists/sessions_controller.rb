@@ -6,8 +6,9 @@ class Therapists::SessionsController < ApplicationController
 
   ALLOWED_STATUSES = %w[absent cancelled].freeze
 
+  # "falta" só é permitida após a sessão ter sido finalizada pelo job
   ALLOWED_TRANSITIONS = {
-    "scheduled" => %w[absent cancelled],
+    "scheduled" => %w[cancelled],
     "completed" => %w[absent cancelled],
     "absent"    => %w[cancelled],
     "cancelled" => []
@@ -60,6 +61,15 @@ class Therapists::SessionsController < ApplicationController
     else
       render json: { errors: session.errors.full_messages }, status: :unprocessable_entity
     end
+  end
+
+  def destroy
+    session = Session.joins(:user)
+                     .where(users: { therapist_id: current_user.id })
+                     .find(params[:id])
+
+    session.destroy
+    head :no_content
   end
 
   private
