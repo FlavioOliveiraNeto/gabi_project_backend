@@ -1,8 +1,6 @@
 class Users::DevisePasswordsController < Devise::PasswordsController
   respond_to :json
 
-  # POST /users/password
-  # Solicita e-mail de recuperação de senha
   def create
     resource_class.send_reset_password_instructions(resource_params)
 
@@ -11,8 +9,6 @@ class Users::DevisePasswordsController < Devise::PasswordsController
     }, status: :ok
   end
 
-  # PUT /users/password
-  # Redefine a senha com o token recebido por e-mail
   def update
     self.resource = resource_class.reset_password_by_token(resource_params)
 

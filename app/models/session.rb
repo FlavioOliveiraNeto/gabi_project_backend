@@ -16,9 +16,6 @@ class Session < ApplicationRecord
   validates :scheduled_at, presence: true
   validate :no_schedule_conflict
 
-  # Auto-completa sessões passadas (regular e extra) após 1 hora do horário marcado.
-  # Usa update_all por performance — o modelo Session não possui callbacks,
-  # portanto o bypass é seguro aqui.
   def self.auto_complete_past_sessions!
     where(status: :scheduled)
       .where("scheduled_at <= ?", 1.hour.ago)
@@ -27,8 +24,6 @@ class Session < ApplicationRecord
 
   private
 
-  # Impede criação/edição de sessões com menos de 1 hora de diferença em relação
-  # a qualquer outra sessão agendada de qualquer paciente da mesma terapeuta.
   def no_schedule_conflict
     return unless scheduled_at.present?
 

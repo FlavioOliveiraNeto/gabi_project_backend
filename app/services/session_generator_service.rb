@@ -3,16 +3,12 @@ class SessionGeneratorService
     @therapist = therapist
   end
 
-  # Chamado pelo WeeklySessionGenerationJob — gera mês atual e próximo
-  # respeitando effective_from e effective_until de cada schedule.
   def generate_for_current_and_next_month
     @therapist.patients.includes(:weekly_schedules).find_each do |patient|
       generate_for_patient(patient)
     end
   end
 
-  # Gera sessões para o paciente dentro da janela (mês atual + próximo),
-  # limitando cada schedule ao seu próprio período de vigência.
   def generate_for_patient(patient)
     window_start = Date.current.beginning_of_month
     window_end   = Date.current.next_month.end_of_month
@@ -27,8 +23,6 @@ class SessionGeneratorService
     end
   end
 
-  # Gera sessões a partir de uma data específica (effective_from de uma nova agenda).
-  # Chamado pelo ScheduleChangeService ao criar nova agenda regular.
   def generate_for_patient_from(patient, from:)
     from_date  = from.to_date
     window_end = Date.current.next_month.end_of_month
@@ -64,8 +58,6 @@ class SessionGeneratorService
         session.status = :scheduled
       end
     rescue ActiveRecord::RecordInvalid => e
-      # Conflito de horário com sessão de outro paciente — loga e pula.
-      # A terapeuta deve resolver manualmente via dashboard.
       Rails.logger.warn "[SessionGenerator] Conflito ignorado para paciente ##{patient.id} em #{datetime}: #{e.message}"
     end
   end

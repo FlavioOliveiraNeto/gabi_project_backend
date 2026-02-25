@@ -70,10 +70,8 @@ class Therapists::PatientsController < ApplicationController
         ).call
 
         if params[:session_id].present?
-          # Atualiza sessão extra existente (edição)
           update_extra_session(@patient)
         else
-          # Cria nova sessão extra (troca de regular → extra)
           create_single_session(@patient)
         end
       end
@@ -138,8 +136,6 @@ class Therapists::PatientsController < ApplicationController
     )
   end
 
-  # Atualiza uma sessão extra existente identificada por params[:session_id].
-  # Nunca cria uma nova sessão — apenas altera o horário da existente.
   def update_extra_session(patient)
     return unless params[:single_date].present? && params[:single_time].present?
 
@@ -156,7 +152,6 @@ class Therapists::PatientsController < ApplicationController
   end
 
   def patient_json(patient)
-    # Usa somente schedules ativos para exibir o estado atual da agenda
     active_schedules = patient.weekly_schedules.select(&:active?)
     all_sessions     = patient.sessions.to_a
     by_status        = all_sessions.group_by(&:status)

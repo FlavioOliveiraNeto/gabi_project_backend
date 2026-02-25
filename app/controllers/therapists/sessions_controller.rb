@@ -4,8 +4,6 @@ class Therapists::SessionsController < ApplicationController
 
   ALLOWED_SESSION_TYPES = %w[regular extra].freeze
 
-  # O auto-complete (job a cada hora) é responsável por marcar sessões como 'completed'.
-  # A terapeuta só pode marcar manualmente 'absent' ou 'cancelled'.
   ALLOWED_STATUSES = %w[absent cancelled].freeze
 
   ALLOWED_TRANSITIONS = {

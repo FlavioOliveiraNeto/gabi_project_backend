@@ -51,7 +51,6 @@ class Therapists::DashboardController < ApplicationController
       weekly_schedules = p.weekly_schedules.to_a
       weekly_count     = weekly_schedules.count
 
-      # Usa registros já carregados em memória — evita N+1
       all_sessions  = p.sessions.sort_by(&:scheduled_at)
       by_status     = all_sessions.group_by(&:status)
       extra_sessions = all_sessions.select { |s| s.session_type == "extra" }
@@ -72,7 +71,6 @@ class Therapists::DashboardController < ApplicationController
 
         session_time: weekly_count > 0 ? weekly_schedules.first.time : nil,
 
-        # extra_sessions exposto para TODOS os pacientes — regulares e avulsos
         extra_sessions: extra_sessions.map do |s|
           local_time = s.scheduled_at.in_time_zone(Time.zone)
           { id: s.id, date: local_time.to_date.iso8601, time: local_time.strftime("%H:%M"), status: s.status }
@@ -81,7 +79,6 @@ class Therapists::DashboardController < ApplicationController
         completed_sessions: (by_status["completed"] || []).count,
         absent_sessions:    (by_status["absent"] || []).count,
 
-        # Filtra notas clínicas em memória pela terapeuta atual — sem query adicional
         clinical_notes: p.clinical_notes
                           .select { |n| n.therapist_id == current_user.id }
                           .sort_by(&:created_at)
