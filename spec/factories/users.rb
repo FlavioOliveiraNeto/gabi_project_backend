@@ -1,16 +1,21 @@
 FactoryBot.define do
   factory :user do
-    email { Faker::Internet.email }
-    password { "Password@123" }
-    password_confirmation { 'Password@123' }
-    confirmed_at { Time.current }
-    role { :client }
-    
-    sessions_count { rand(0..10) }
-    google_meet_link { "https://meet.google.com/#{Faker::Alphanumeric.alpha(number: 10)}" }
+    sequence(:email) { |n| "user#{n}@exemplo.com" }
+    name             { Faker::Name.name }
+    password         { "Password@123" }
+    password_confirmation { "Password@123" }
+    role             { :client }
 
     trait :therapist do
       role { :therapist }
+    end
+
+    trait :client do
+      role { :client }
+    end
+
+    trait :must_change_password do
+      must_change_password { true }
     end
   end
 end

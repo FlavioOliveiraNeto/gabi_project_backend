@@ -22,18 +22,25 @@ class Therapists::PatientsController < ApplicationController
     ActiveRecord::Base.transaction do
       patient.save!
 
-      build_weekly_schedules(patient)
-
       case params[:schedule_type]
       when "regular"
-        SessionGeneratorService.new(current_user).generate_for_patient(patient)
+        ScheduleChangeService.new(
+          patient:         patient,
+          therapist:       current_user,
+          effective_from:  Date.current,
+          schedule_type:   "regular",
+          schedule_params: schedule_params_from_request
+        ).call
       when "extra"
         create_single_session(patient)
       end
 
-      render json: patient_json(patient).merge({ generated_password: generated_password }), status: :created
+      render json: patient_json(patient).merge({ generated_password: generated_password }),
+             status: :created
     end
 
+  rescue ScheduleChangeService::Error => e
+    render json: { error: e.message }, status: :unprocessable_entity
   rescue ActiveRecord::RecordInvalid => e
     render json: { errors: e.record.errors.full_messages }, status: :unprocessable_entity
   end
@@ -42,26 +49,25 @@ class Therapists::PatientsController < ApplicationController
     ActiveRecord::Base.transaction do
       @patient.update!(patient_params)
 
-      case params[:schedule_type]
+      effective_from = parse_effective_from
+
+      case params[:schedule_type].to_s
       when "regular"
-        @patient.sessions
-                .where(session_type: :regular)
-                .where("scheduled_at >= ?", Time.current)
-                .update_all(status: Session.statuses[:cancelled])
-
-        @patient.weekly_schedules.destroy_all
-
-        build_weekly_schedules(@patient)
-
-        SessionGeneratorService.new(current_user).generate_for_patient(@patient)
+        ScheduleChangeService.new(
+          patient:         @patient,
+          therapist:       current_user,
+          effective_from:  effective_from,
+          schedule_type:   "regular",
+          schedule_params: schedule_params_from_request
+        ).call
 
       when "extra"
-        @patient.weekly_schedules.destroy_all
-
-        @patient.sessions
-                .where(session_type: :regular)
-                .where("scheduled_at >= ?", Time.current)
-                .update_all(status: Session.statuses[:cancelled])
+        ScheduleChangeService.new(
+          patient:        @patient,
+          therapist:      current_user,
+          effective_from: effective_from,
+          schedule_type:  "extra"
+        ).call
 
         if params[:session_id].present?
           # Atualiza sessão extra existente (edição)
@@ -76,6 +82,8 @@ class Therapists::PatientsController < ApplicationController
       render json: patient_json(@patient)
     end
 
+  rescue ScheduleChangeService::Error => e
+    render json: { error: e.message }, status: :unprocessable_entity
   rescue ActiveRecord::RecordInvalid => e
     render json: { errors: e.record.errors.full_messages }, status: :unprocessable_entity
   end
@@ -92,38 +100,40 @@ class Therapists::PatientsController < ApplicationController
   end
 
   def set_patient
-    @patient = current_user.patients.includes(:clinical_notes, :sessions, :weekly_schedules).find(params[:id])
+    @patient = current_user.patients
+                            .includes(:clinical_notes, :sessions, :weekly_schedules)
+                            .find(params[:id])
   end
 
   def patient_params
     params.permit(:name, :email, :google_meet_link)
   end
 
-  def build_weekly_schedules(patient)
-    return unless params[:weekdays].is_a?(Array) && params[:weekdays].any?
+  def schedule_params_from_request
+    {
+      weekdays:          params[:weekdays],
+      sessions_per_week: params[:sessions_per_week],
+      session_time:      params[:session_time]
+    }
+  end
 
-    sessions_per_week = params[:sessions_per_week].to_i
-    session_time = params[:session_time].presence
+  def parse_effective_from
+    return Date.current unless params[:effective_from].present?
 
-    params[:weekdays].each do |weekday|
-      patient.weekly_schedules.create!(
-        weekday: weekday,
-        sessions_per_week: sessions_per_week,
-        time: session_time
-      )
-    end
+    Date.parse(params[:effective_from].to_s)
+  rescue Date::Error
+    Date.current
   end
 
   def create_single_session(patient)
-    return unless params[:single_date].present?
-    return unless params[:single_time].present?
+    return unless params[:single_date].present? && params[:single_time].present?
 
     scheduled_at = Time.zone.parse("#{params[:single_date]} #{params[:single_time]}")
     return unless scheduled_at
 
     patient.sessions.create!(
       scheduled_at: scheduled_at,
-      status: :scheduled,
+      status:       :scheduled,
       session_type: :extra
     )
   end
@@ -146,27 +156,26 @@ class Therapists::PatientsController < ApplicationController
   end
 
   def patient_json(patient)
-    schedules    = patient.weekly_schedules.to_a
-    all_sessions = patient.sessions.to_a
-    by_status    = all_sessions.group_by(&:status)
-    extra_sessions = all_sessions
-                       .select { |s| s.session_type == "extra" }
-                       .sort_by(&:scheduled_at)
+    # Usa somente schedules ativos para exibir o estado atual da agenda
+    active_schedules = patient.weekly_schedules.select(&:active?)
+    all_sessions     = patient.sessions.to_a
+    by_status        = all_sessions.group_by(&:status)
+    extra_sessions   = all_sessions.select { |s| s.session_type == "extra" }.sort_by(&:scheduled_at)
 
-    schedule_type = schedules.any? ? "regular" : "extra"
+    schedule_type = active_schedules.any? ? "regular" : "extra"
 
     {
-      id: patient.id,
-      name: patient.name,
-      email: patient.email,
-      google_meet_link: patient.google_meet_link,
-      created_at: patient.created_at,
-      schedule_type: schedule_type,
-      sessions_per_week: schedules.first&.sessions_per_week || 0,
-      session_days: schedules.map(&:weekday),
-      session_time: schedules.first&.time,
+      id:                patient.id,
+      name:              patient.name,
+      email:             patient.email,
+      google_meet_link:  patient.google_meet_link,
+      created_at:        patient.created_at,
+      schedule_type:     schedule_type,
+      sessions_per_week: active_schedules.first&.sessions_per_week || 0,
+      session_days:      active_schedules.map(&:weekday),
+      session_time:      active_schedules.first&.time,
       completed_sessions: (by_status["completed"] || []).count,
-      absent_sessions: (by_status["absent"] || []).count,
+      absent_sessions:    (by_status["absent"] || []).count,
       extra_sessions: extra_sessions.map do |s|
         local_time = s.scheduled_at.in_time_zone(Time.zone)
         { id: s.id, date: local_time.to_date.iso8601, time: local_time.strftime("%H:%M"), status: s.status }

@@ -1,6 +1,6 @@
 FactoryBot.define do
   factory :patient_note do
-    user { nil }
-    content { "MyText" }
+    association :user
+    content { Faker::Lorem.paragraph }
   end
 end
