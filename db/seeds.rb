@@ -69,9 +69,9 @@ names.each_with_index do |name, index|
 
   puts "👤 Paciente criado: #{client.name}"
 
-  # Define 1 ou 2 dias fixos
+  # Define 1 ou 2 dias fixos — hora sequencial por paciente para evitar conflitos
   weekdays = WeeklySchedule.weekdays.keys.sample(rand(1..2))
-  hour     = rand(8..19)
+  hour     = 8 + index
   time     = format("%02d:00", hour)
 
   # =========================

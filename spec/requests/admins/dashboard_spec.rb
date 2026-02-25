@@ -27,7 +27,7 @@ RSpec.describe "Therapists::Dashboard", type: :request do
     end
 
     context "quando usuário é client" do
-      it "bloqueia o acesso e redireciona (conforme Pundit)" do
+      it "bloqueia o acesso (acesso restrito a admin)" do
         sign_in client_1
         get admins_dashboard_path
         

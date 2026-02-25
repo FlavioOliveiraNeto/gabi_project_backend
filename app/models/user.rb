@@ -24,6 +24,10 @@ class User < ApplicationRecord
   has_many :patient_notes, dependent: :destroy
   has_many :weekly_schedules, dependent: :destroy
 
+  validates :google_meet_link,
+            format: { with: /\Ahttps?:\/\//i, message: "deve começar com http:// ou https://" },
+            allow_blank: true
+
   # Força troca de senha no primeiro login
   def must_change_password?
     self.must_change_password

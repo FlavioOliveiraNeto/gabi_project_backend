@@ -40,6 +40,10 @@ class SessionGeneratorService
       patient.sessions.find_or_create_by!(scheduled_at: datetime, session_type: :regular) do |session|
         session.status = :scheduled
       end
+    rescue ActiveRecord::RecordInvalid => e
+      # Conflito de horário com sessão de outro paciente — loga e pula.
+      # A terapeuta deve resolver manualmente via dashboard.
+      Rails.logger.warn "[SessionGenerator] Conflito ignorado para paciente ##{patient.id} em #{datetime}: #{e.message}"
     end
   end
 end

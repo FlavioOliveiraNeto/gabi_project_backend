@@ -6,6 +6,7 @@ class Therapists::ClinicalNotesController < ApplicationController
 
   def index
     render json: @patient.clinical_notes
+                         .where(therapist: current_user)
                          .order(created_at: :desc)
                          .as_json(only: %i[id content date created_at])
   end
@@ -53,7 +54,7 @@ class Therapists::ClinicalNotesController < ApplicationController
   end
 
   def set_note
-    @note = @patient.clinical_notes.find_by(id: params[:id])
+    @note = @patient.clinical_notes.where(therapist: current_user).find_by(id: params[:id])
     render json: { error: "Nota não encontrada." }, status: :not_found unless @note
   end
 end

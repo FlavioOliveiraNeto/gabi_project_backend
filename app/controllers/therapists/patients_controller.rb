@@ -25,9 +25,9 @@ class Therapists::PatientsController < ApplicationController
       build_weekly_schedules(patient)
 
       case params[:schedule_type]
-      when "weekly"
+      when "regular"
         SessionGeneratorService.new(current_user).generate_for_patient(patient)
-      when "single"
+      when "extra"
         create_single_session(patient)
       end
 
@@ -43,8 +43,7 @@ class Therapists::PatientsController < ApplicationController
       @patient.update!(patient_params)
 
       case params[:schedule_type]
-
-      when "weekly"
+      when "regular"
         @patient.sessions
                 .where(session_type: :regular)
                 .where("scheduled_at >= ?", Time.current)
@@ -55,7 +54,8 @@ class Therapists::PatientsController < ApplicationController
         build_weekly_schedules(@patient)
 
         SessionGeneratorService.new(current_user).generate_for_patient(@patient)
-      when "single"
+
+      when "extra"
         @patient.weekly_schedules.destroy_all
 
         @patient.sessions
@@ -63,7 +63,13 @@ class Therapists::PatientsController < ApplicationController
                 .where("scheduled_at >= ?", Time.current)
                 .update_all(status: Session.statuses[:cancelled])
 
-        create_single_session(@patient)
+        if params[:session_id].present?
+          # Atualiza sessão extra existente (edição)
+          update_extra_session(@patient)
+        else
+          # Cria nova sessão extra (troca de regular → extra)
+          create_single_session(@patient)
+        end
       end
 
       @patient.reload
@@ -108,51 +114,11 @@ class Therapists::PatientsController < ApplicationController
     end
   end
 
-  def next_weekday_time(weekday_str, time_str)
-    return nil unless time_str.present?
-
-    weekdays = {
-      "sunday" => 0, "monday" => 1, "tuesday" => 2, "wednesday" => 3,
-      "thursday" => 4, "friday" => 5, "saturday" => 6
-    }
-
-    target_wday = weekdays[weekday_str.to_s.downcase]
-
-    return nil if target_wday.nil?
-
-    now = Time.zone.now
-    hour, min = time_str.split(":").map(&:to_i)
-    date = now.to_date
-    days_ahead = (target_wday - date.wday) % 7
-    days_ahead = 7 if days_ahead == 0
-    next_date = date + days_ahead
-    Time.zone.local(next_date.year, next_date.month, next_date.day, hour, min)
-  end
-
-  def create_weekly_sessions(patient)
-    return unless params[:weekdays].is_a?(Array)
-    return unless params[:session_time].present?
-
-    params[:weekdays].each do |weekday|
-      scheduled_at = next_weekday_time(weekday, params[:session_time])
-      next unless scheduled_at
-
-      patient.sessions.create!(
-        scheduled_at: scheduled_at,
-        status: :scheduled,
-        session_type: :regular
-      )
-    end
-  end
-
   def create_single_session(patient)
     return unless params[:single_date].present?
     return unless params[:single_time].present?
 
-    scheduled_at = Time.zone.parse(
-      "#{params[:single_date]} #{params[:single_time]}"
-    )
-
+    scheduled_at = Time.zone.parse("#{params[:single_date]} #{params[:single_time]}")
     return unless scheduled_at
 
     patient.sessions.create!(
@@ -162,17 +128,32 @@ class Therapists::PatientsController < ApplicationController
     )
   end
 
-  def patient_json(patient)
-    schedules = patient.weekly_schedules
-    weekly_count = schedules.count
-    sessions = patient.sessions
+  # Atualiza uma sessão extra existente identificada por params[:session_id].
+  # Nunca cria uma nova sessão — apenas altera o horário da existente.
+  def update_extra_session(patient)
+    return unless params[:single_date].present? && params[:single_time].present?
 
-    schedule_type =
-      if weekly_count > 0
-        "weekly"
-      elsif sessions.any?
-        "single"
-      end
+    session = patient.sessions
+                     .where(session_type: :extra)
+                     .find_by(id: params[:session_id])
+
+    return unless session
+
+    scheduled_at = Time.zone.parse("#{params[:single_date]} #{params[:single_time]}")
+    return unless scheduled_at
+
+    session.update!(scheduled_at: scheduled_at)
+  end
+
+  def patient_json(patient)
+    schedules    = patient.weekly_schedules.to_a
+    all_sessions = patient.sessions.to_a
+    by_status    = all_sessions.group_by(&:status)
+    extra_sessions = all_sessions
+                       .select { |s| s.session_type == "extra" }
+                       .sort_by(&:scheduled_at)
+
+    schedule_type = schedules.any? ? "regular" : "extra"
 
     {
       id: patient.id,
@@ -184,11 +165,17 @@ class Therapists::PatientsController < ApplicationController
       sessions_per_week: schedules.first&.sessions_per_week || 0,
       session_days: schedules.map(&:weekday),
       session_time: schedules.first&.time,
-      completed_sessions: sessions.where(status: :completed).count,
-      absent_sessions: sessions.where(status: :absent).count,
-      clinical_notes: patient.clinical_notes.order(created_at: :desc).map do |n|
-        { id: n.id, content: n.content, date: n.date, created_at: n.created_at }
-      end
+      completed_sessions: (by_status["completed"] || []).count,
+      absent_sessions: (by_status["absent"] || []).count,
+      extra_sessions: extra_sessions.map do |s|
+        local_time = s.scheduled_at.in_time_zone(Time.zone)
+        { id: s.id, date: local_time.to_date.iso8601, time: local_time.strftime("%H:%M"), status: s.status }
+      end,
+      clinical_notes: patient.clinical_notes.to_a
+                             .select { |n| n.therapist_id == current_user.id }
+                             .sort_by(&:created_at)
+                             .reverse
+                             .map { |n| { id: n.id, content: n.content, date: n.date, created_at: n.created_at } }
     }
   end
 end

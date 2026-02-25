@@ -31,7 +31,7 @@ class Users::PasswordsController < ApplicationController
     return unless auth_header&.start_with?("Bearer ")
 
     token = auth_header.split(" ").last
-    secret = Rails.application.credentials.devise_jwt_secret_key || "temporary_build_key"
+    secret = Rails.application.credentials.devise_jwt_secret_key || Rails.application.secret_key_base
     payload, = JWT.decode(token, secret, true, algorithms: ["HS256"])
     return unless payload["jti"].present?
 

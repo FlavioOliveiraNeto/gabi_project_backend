@@ -4,11 +4,12 @@ class Therapists::SessionsController < ApplicationController
 
   ALLOWED_SESSION_TYPES = %w[regular extra].freeze
 
-  ALLOWED_STATUSES = %w[scheduled completed absent cancelled].freeze
+  # O auto-complete (job a cada hora) é responsável por marcar sessões como 'completed'.
+  # A terapeuta só pode marcar manualmente 'absent' ou 'cancelled'.
+  ALLOWED_STATUSES = %w[absent cancelled].freeze
 
-  # Transições de status permitidas por estado atual
   ALLOWED_TRANSITIONS = {
-    "scheduled" => %w[completed absent cancelled],
+    "scheduled" => %w[absent cancelled],
     "completed" => %w[absent cancelled],
     "absent"    => %w[cancelled],
     "cancelled" => []
@@ -44,7 +45,7 @@ class Therapists::SessionsController < ApplicationController
     new_status = params[:status].to_s
 
     unless ALLOWED_STATUSES.include?(new_status)
-      render json: { error: "Status inválido. Use: #{ALLOWED_STATUSES.join(', ')}." }, status: :unprocessable_entity
+      render json: { error: "Status inválido. A terapeuta só pode marcar: #{ALLOWED_STATUSES.join(', ')}." }, status: :unprocessable_entity
       return
     end
 
