@@ -1,10 +1,12 @@
 class Therapists::PatientsController < ApplicationController
   before_action :authenticate_user!
   before_action :ensure_therapist!
-  before_action :set_patient, only: %i[show update destroy]
+  before_action :set_patient, only: %i[show update destroy update_schedule]
 
   def index
-    patients = current_user.patients.includes(:clinical_notes, :sessions, :weekly_schedules)
+    patients = current_user.patients
+                           .includes(:clinical_notes, :sessions, :weekly_schedules)
+
     render json: patients.map { |p| patient_json(p) }
   end
 
@@ -15,6 +17,7 @@ class Therapists::PatientsController < ApplicationController
   def create
     patient = current_user.patients.build(patient_params)
     patient.role = :client
+
     generated_password = Devise.friendly_token.first(8)
     patient.password = generated_password
     patient.must_change_password = true
@@ -22,35 +25,34 @@ class Therapists::PatientsController < ApplicationController
     ActiveRecord::Base.transaction do
       patient.save!
 
-      case params[:schedule_type]
-      when "regular"
-        ScheduleChangeService.new(
-          patient:         patient,
-          therapist:       current_user,
-          effective_from:  Date.current,
-          schedule_type:   "regular",
-          schedule_params: schedule_params_from_request
-        ).call
-      when "extra"
-        create_single_session(patient)
-      end
-
-      render json: patient_json(patient).merge({ generated_password: generated_password }),
+      render json: patient_json(patient)
+                     .merge(generated_password: generated_password),
              status: :created
     end
 
-  rescue ScheduleChangeService::Error => e
-    render json: { error: e.message }, status: :unprocessable_entity
   rescue ActiveRecord::RecordInvalid => e
-    render json: { errors: e.record.errors.full_messages }, status: :unprocessable_entity
+    render json: { errors: e.record.errors.full_messages },
+           status: :unprocessable_entity
   end
 
   def update
+    @patient.update!(patient_params)
+    render json: patient_json(@patient)
+
+  rescue ActiveRecord::RecordInvalid => e
+    render json: { errors: e.record.errors.full_messages },
+           status: :unprocessable_entity
+  end
+
+  def destroy
+    @patient.destroy
+    head :no_content
+  end
+
+  def update_schedule
+    effective_from = parse_effective_from
+
     ActiveRecord::Base.transaction do
-      @patient.update!(patient_params)
-
-      effective_from = parse_effective_from
-
       case params[:schedule_type].to_s
       when "regular"
         ScheduleChangeService.new(
@@ -74,6 +76,10 @@ class Therapists::PatientsController < ApplicationController
         else
           create_single_session(@patient)
         end
+
+      else
+        return render json: { error: "Tipo de agenda inválido." },
+                      status: :unprocessable_entity
       end
 
       @patient.reload
@@ -81,26 +87,22 @@ class Therapists::PatientsController < ApplicationController
     end
 
   rescue ScheduleChangeService::Error => e
-    render json: { error: e.message }, status: :unprocessable_entity
-  rescue ActiveRecord::RecordInvalid => e
-    render json: { errors: e.record.errors.full_messages }, status: :unprocessable_entity
-  end
-
-  def destroy
-    @patient.destroy
-    head :no_content
+    render json: { error: e.message },
+           status: :unprocessable_entity
   end
 
   private
 
   def ensure_therapist!
-    render json: { error: "Acesso restrito." }, status: :forbidden unless current_user.therapist?
+    return if current_user.therapist?
+
+    render json: { error: "Acesso restrito." }, status: :forbidden
   end
 
   def set_patient
     @patient = current_user.patients
-                            .includes(:clinical_notes, :sessions, :weekly_schedules)
-                            .find(params[:id])
+                           .includes(:clinical_notes, :sessions, :weekly_schedules)
+                           .find(params[:id])
   end
 
   def patient_params
@@ -155,31 +157,44 @@ class Therapists::PatientsController < ApplicationController
     active_schedules = patient.weekly_schedules.select(&:active?)
     all_sessions     = patient.sessions.to_a
     by_status        = all_sessions.group_by(&:status)
-    extra_sessions   = all_sessions.select { |s| s.session_type == "extra" }.sort_by(&:scheduled_at)
+    extra_sessions   = all_sessions
+                         .select { |s| s.session_type == "extra" }
+                         .sort_by(&:scheduled_at)
 
     schedule_type = active_schedules.any? ? "regular" : "extra"
 
     {
-      id:                patient.id,
-      name:              patient.name,
-      email:             patient.email,
-      google_meet_link:  patient.google_meet_link,
-      created_at:        patient.created_at,
-      schedule_type:     schedule_type,
-      sessions_per_week: active_schedules.first&.sessions_per_week || 0,
-      session_days:      active_schedules.map(&:weekday),
-      session_time:      active_schedules.first&.time,
+      id:                 patient.id,
+      name:               patient.name,
+      email:              patient.email,
+      google_meet_link:   patient.google_meet_link,
+      created_at:         patient.created_at,
+      schedule_type:      schedule_type,
+      sessions_per_week:  active_schedules.first&.sessions_per_week || 0,
+      session_days:       active_schedules.map(&:weekday),
+      session_time:       active_schedules.first&.time,
       completed_sessions: (by_status["completed"] || []).count,
       absent_sessions:    (by_status["absent"] || []).count,
       extra_sessions: extra_sessions.map do |s|
         local_time = s.scheduled_at.in_time_zone(Time.zone)
-        { id: s.id, date: local_time.to_date.iso8601, time: local_time.strftime("%H:%M"), status: s.status }
+        {
+          id:     s.id,
+          date:   local_time.to_date.iso8601,
+          time:   local_time.strftime("%H:%M"),
+          status: s.status
+        }
       end,
-      clinical_notes: patient.clinical_notes.to_a
-                             .select { |n| n.therapist_id == current_user.id }
-                             .sort_by(&:created_at)
-                             .reverse
-                             .map { |n| { id: n.id, content: n.content, date: n.date, created_at: n.created_at } }
+      clinical_notes: patient.clinical_notes
+                             .where(therapist_id: current_user.id)
+                             .order(created_at: :desc)
+                             .map { |n|
+        {
+          id:         n.id,
+          content:    n.content,
+          date:       n.date,
+          created_at: n.created_at
+        }
+      }
     }
   end
 end
