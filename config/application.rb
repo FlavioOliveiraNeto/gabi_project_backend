@@ -38,6 +38,7 @@ module GabiProjectBackend
 
     config.time_zone = "Brasilia"
     config.active_record.default_timezone = :local
+    config.beginning_of_week = :sunday
     # config.eager_load_paths << Rails.root.join("extras")
 
     # Don't generate system test files.
