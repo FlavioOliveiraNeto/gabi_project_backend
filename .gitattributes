@@ -1,5 +1,16 @@
 # See https://git-scm.com/docs/gitattributes for more about git attribute files.
 
+# Enforce LF line endings for all text files.
+* text=auto eol=lf
+
+# Binary files should not be modified.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+
 # Mark the database schema as having been generated.
 db/schema.rb linguist-generated
 
