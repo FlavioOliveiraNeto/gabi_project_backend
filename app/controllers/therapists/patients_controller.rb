@@ -24,14 +24,18 @@ class Therapists::PatientsController < ApplicationController
 
     ActiveRecord::Base.transaction do
       patient.save!
+      setup_initial_schedule!(patient)
+      patient.reload
 
-      render json: patient_json(patient)
-                     .merge(generated_password: generated_password),
+      render json: patient_json(patient).merge(generated_password: generated_password),
              status: :created
     end
 
   rescue ActiveRecord::RecordInvalid => e
     render json: { errors: e.record.errors.full_messages },
+           status: :unprocessable_entity
+  rescue ScheduleChangeService::Error => e
+    render json: { error: e.message },
            status: :unprocessable_entity
   end
 
@@ -107,6 +111,21 @@ class Therapists::PatientsController < ApplicationController
 
   def patient_params
     params.permit(:name, :email, :google_meet_link)
+  end
+
+  def setup_initial_schedule!(patient)
+    case params[:schedule_type].to_s
+    when "regular"
+      ScheduleChangeService.new(
+        patient:         patient,
+        therapist:       current_user,
+        effective_from:  Date.current,
+        schedule_type:   "regular",
+        schedule_params: schedule_params_from_request
+      ).call
+    when "extra"
+      create_single_session(patient)
+    end
   end
 
   def schedule_params_from_request
