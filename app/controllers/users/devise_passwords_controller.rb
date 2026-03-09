@@ -13,6 +13,7 @@ class Users::DevisePasswordsController < Devise::PasswordsController
     self.resource = resource_class.reset_password_by_token(resource_params)
 
     if resource.errors.empty?
+      resource.clear_must_change_password! if resource.must_change_password?
       render json: { message: "Senha redefinida com sucesso. Faça login com sua nova senha." }, status: :ok
     else
       render json: { errors: resource.errors.full_messages }, status: :unprocessable_entity
