@@ -1,8 +1,9 @@
+# frozen_string_literal: true
+
 FactoryBot.define do
   factory :clinical_note do
-    content { Faker::Lorem.paragraph }
-    date    { Time.current }
-    association :user
-    association :therapist, factory: :user, role: :therapist
+    association :user, factory: %i[user client]
+    association :session, factory: %i[session past]
+    content { Faker::Lorem.paragraph(sentence_count: 5) }
   end
 end

@@ -1,22 +1,47 @@
+# frozen_string_literal: true
+
 FactoryBot.define do
   factory :session do
-    association :user
-    scheduled_at { 1.week.from_now }
+    association :user, factory: %i[user client]
+    recurring_schedule { nil }
+    start_time   { 1.week.from_now.beginning_of_hour }
+    end_time     { 1.week.from_now.beginning_of_hour + 50.minutes }
     status       { :scheduled }
-    session_type { :regular }
+    session_type { :recurring }
+    meet_link    { nil }
 
-    trait :scheduled  do status { :scheduled }  end
-    trait :completed  do status { :completed }  end
-    trait :absent     do status { :absent }     end
-    trait :cancelled  do status { :cancelled }  end
+    trait :completed do
+      status     { :completed }
+      start_time { 1.week.ago.beginning_of_hour }
+      end_time   { 1.week.ago.beginning_of_hour + 50.minutes }
+    end
 
-    trait :regular do session_type { :regular } end
-    trait :extra   do session_type { :extra }   end
+    trait :missed do
+      status     { :missed }
+      start_time { 2.weeks.ago.beginning_of_hour }
+      end_time   { 2.weeks.ago.beginning_of_hour + 50.minutes }
+    end
 
-    # Sessão no passado (mais de 1h atrás — elegível para auto-complete)
+    trait :cancelled do
+      status { :cancelled }
+    end
+
+    trait :extra do
+      session_type { :extra }
+    end
+
     trait :past do
-      scheduled_at { 2.hours.ago }
-      status       { :scheduled }
+      start_time { 1.week.ago.beginning_of_hour }
+      end_time   { 1.week.ago.beginning_of_hour + 50.minutes }
+    end
+
+    trait :future do
+      start_time { 1.week.from_now.beginning_of_hour }
+      end_time   { 1.week.from_now.beginning_of_hour + 50.minutes }
+    end
+
+    trait :with_meet_link do
+      meet_link { "https://meet.google.com/xyz-abcd-efg" }
     end
   end
 end

@@ -1,10 +1,14 @@
+# frozen_string_literal: true
+
 FactoryBot.define do
   factory :user do
-    sequence(:email) { |n| "user#{n}@exemplo.com" }
-    name             { Faker::Name.name }
-    password         { "Password@123" }
-    password_confirmation { "Password@123" }
-    role             { :client }
+    sequence(:email) { |n| "usuario#{n}@clinicagabi.com.br" }
+    name     { Faker::Name.name }
+    password { "Senha@123!" }
+    role     { :therapist }
+    phone    { Faker::PhoneNumber.phone_number }
+    force_password_change { false }
+    active   { true }
 
     trait :therapist do
       role { :therapist }
@@ -14,12 +18,12 @@ FactoryBot.define do
       role { :client }
     end
 
-    trait :must_change_password do
-      must_change_password { true }
+    trait :with_force_password_change do
+      force_password_change { true }
     end
 
-    trait :with_meet_link do
-      google_meet_link { "https://meet.google.com/abc-defg-hij" }
+    trait :inactive do
+      active { false }
     end
   end
 end
