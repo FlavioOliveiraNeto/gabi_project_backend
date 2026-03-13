@@ -429,8 +429,16 @@ RSpec.describe Session, type: :model do
     end
 
     describe ".upcoming" do
-      let!(:futura)  { create(:session, :future, user: cliente, status: :scheduled) }
-      let!(:passada) { create(:session, :past, user: cliente, status: :scheduled) }
+      let!(:futura) do
+        create(:session, user: cliente, status: :scheduled,
+          start_time: 3.weeks.from_now.beginning_of_hour,
+          end_time:   3.weeks.from_now.beginning_of_hour + 50.minutes)
+      end
+      let!(:passada) do
+        create(:session, user: cliente, status: :scheduled,
+          start_time: 3.weeks.ago.beginning_of_hour,
+          end_time:   3.weeks.ago.beginning_of_hour + 50.minutes)
+      end
 
       it "retorna sessões scheduled com start_time no futuro" do
         expect(described_class.upcoming).to include(futura)
@@ -438,14 +446,24 @@ RSpec.describe Session, type: :model do
       end
 
       it "não retorna sessões não-scheduled mesmo que futuras" do
-        cancelada_futura = create(:session, :future, :cancelled, user: cliente)
+        cancelada_futura = create(:session, :cancelled, user: cliente,
+          start_time: 4.weeks.from_now.beginning_of_hour,
+          end_time:   4.weeks.from_now.beginning_of_hour + 50.minutes)
         expect(described_class.upcoming).not_to include(cancelada_futura)
       end
     end
 
     describe ".past" do
-      let!(:futura)  { create(:session, :future, user: cliente) }
-      let!(:passada) { create(:session, :past, user: cliente) }
+      let!(:futura) do
+        create(:session, user: cliente,
+          start_time: 3.weeks.from_now.beginning_of_hour,
+          end_time:   3.weeks.from_now.beginning_of_hour + 50.minutes)
+      end
+      let!(:passada) do
+        create(:session, user: cliente,
+          start_time: 3.weeks.ago.beginning_of_hour,
+          end_time:   3.weeks.ago.beginning_of_hour + 50.minutes)
+      end
 
       it "retorna sessões com start_time no passado" do
         expect(described_class.past).to include(passada)
@@ -455,7 +473,11 @@ RSpec.describe Session, type: :model do
 
     describe ".for_user(user)" do
       let(:outro_cliente) { create(:user, :client) }
-      let!(:sessao_outro) { create(:session, user: outro_cliente, status: :scheduled) }
+      let!(:sessao_outro) do
+        create(:session, user: outro_cliente, status: :scheduled,
+          start_time: 3.weeks.from_now.beginning_of_hour,
+          end_time:   3.weeks.from_now.beginning_of_hour + 50.minutes)
+      end
 
       it "filtra sessões do usuário especificado" do
         resultado = described_class.for_user(cliente)
@@ -602,7 +624,7 @@ RSpec.describe Session, type: :model do
     end
 
     context "when sessão é cancelada" do
-      let(:sessao) { create(:session, status: :scheduled) }
+      let!(:sessao) { create(:session, status: :scheduled) }
 
       it "registra um AuditLog" do
         expect { sessao.cancel! }.to change(AuditLog, :count).by(1)
@@ -618,7 +640,7 @@ RSpec.describe Session, type: :model do
     end
 
     context "when sessão é marcada como falta" do
-      let(:sessao) { create(:session, :past, status: :completed) }
+      let!(:sessao) { create(:session, :past, status: :completed) }
 
       it "registra um AuditLog" do
         expect { sessao.mark_as_missed! }.to change(AuditLog, :count).by(1)

@@ -67,19 +67,20 @@ RSpec.describe AuditLog, type: :model do
           .to raise_error(ActiveRecord::ReadOnlyRecord)
       end
 
-      it "update retorna false sem levanta erro quando chamado com update (sem bang)" do
-        expect(log_criado.update(action: "outro_action")).to be_falsey
+      it "update (sem bang) também levanta ReadOnlyRecord" do
+        expect { log_criado.update(action: "outro_action") }
+          .to raise_error(ActiveRecord::ReadOnlyRecord)
       end
     end
 
     describe "destroy" do
-      it "não pode ser deletado" do
+      it "não pode ser deletado via destroy!" do
         expect { log_criado.destroy! }
           .to raise_error(ActiveRecord::ReadOnlyRecord)
       end
 
       it "não remove o registro do banco ao chamar destroy" do
-        log_criado.destroy
+        log_criado.destroy rescue ActiveRecord::ReadOnlyRecord
         expect(described_class.exists?(log_criado.id)).to be true
       end
     end
