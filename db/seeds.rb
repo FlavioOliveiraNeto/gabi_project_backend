@@ -102,7 +102,7 @@ names.each_with_index do |name, index|
       Session.find_or_create_by!(
         user: client,
         scheduled_at: datetime,
-        session_type: :regular
+        session_type: :recurring
       ) do |s|
         s.status = status
       end
