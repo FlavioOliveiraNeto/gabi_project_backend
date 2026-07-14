@@ -18,8 +18,8 @@ FactoryBot.define do
       role { :client }
     end
 
-    trait :with_force_password_change do
-      force_password_change { true }
+    trait :must_change_password do
+      must_change_password { true }
     end
 
     trait :inactive do

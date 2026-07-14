@@ -4,15 +4,15 @@ class Session < ApplicationRecord
   include Auditable
 
   # Levantado quando uma transição de status inválida é tentada via métodos
-  # de negócio (cancel!, mark_as_missed!, auto_complete!).
+  # de negócio (cancel!, mark_as_absent!, auto_complete!).
   InvalidTransition = Class.new(StandardError)
 
   # Transições permitidas via atribuição direta / update normal.
   # scheduled → completed é bloqueado — só auto_complete! (job) é permitido.
   ALLOWED_DIRECT_TRANSITIONS = {
     "scheduled" => %w[cancelled],
-    "completed" => %w[missed],
-    "missed"    => [],
+    "completed" => %w[absent],
+    "absent"    => [],
     "cancelled" => []
   }.freeze
 
@@ -21,7 +21,7 @@ class Session < ApplicationRecord
   enum :status, {
     scheduled: 0,
     completed: 1,
-    missed:    2,
+    absent:    2,
     cancelled: 3
   }
 
@@ -70,11 +70,11 @@ class Session < ApplicationRecord
     log_audit("cancel")
   end
 
-  def mark_as_missed!
+  def mark_as_absent!
     raise InvalidTransition, "Apenas sessões concluídas podem ser marcadas como falta (status atual: #{status})" unless completed?
 
-    update!(status: :missed)
-    log_audit("mark_as_missed")
+    update!(status: :absent)
+    log_audit("mark_as_absent")
   end
 
   # Chamado exclusivamente pelo job de auto-completar sessões passadas.
@@ -108,7 +108,7 @@ class Session < ApplicationRecord
     scheduled?
   end
 
-  def can_mark_as_missed?
+  def can_mark_as_absent?
     completed?
   end
 
@@ -139,11 +139,14 @@ class Session < ApplicationRecord
 
   def no_session_conflict
     return unless start_time.present? && end_time.present?
-    return if cancelled?
+    return unless scheduled?
+    return unless user.present?
 
     conflict = Session
       .where.not(id: id)
-      .where.not(status: :cancelled)
+      .where(status: :scheduled)
+      .joins(:user)
+      .where(users: { therapist_id: user.therapist_id })
       .where("start_time < ? AND end_time > ?", end_time, start_time)
       .exists?
 

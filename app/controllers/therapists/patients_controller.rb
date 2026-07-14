@@ -152,6 +152,8 @@ class Therapists::PatientsController < ApplicationController
 
     patient.sessions.create!(
       scheduled_at: scheduled_at,
+      start_time:   scheduled_at,
+      end_time:     scheduled_at + 50.minutes,
       status:       :scheduled,
       session_type: :extra
     )

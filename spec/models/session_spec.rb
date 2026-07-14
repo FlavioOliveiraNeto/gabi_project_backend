@@ -302,13 +302,13 @@ RSpec.describe Session, type: :model do
       end
     end
 
-    describe "completed → missed (permitida)" do
+    describe "completed → absent (permitida)" do
       let(:sessao) { create(:session, :past, status: :completed) }
 
-      it "é permitida via mark_as_missed!" do
-        expect { sessao.mark_as_missed! }
+      it "é permitida via mark_as_absent!" do
+        expect { sessao.mark_as_absent! }
           .to change { sessao.reload.status }
-          .from("completed").to("missed")
+          .from("completed").to("absent")
       end
     end
 
@@ -328,11 +328,11 @@ RSpec.describe Session, type: :model do
       end
     end
 
-    describe "scheduled → missed (proibida diretamente)" do
+    describe "scheduled → absent (proibida diretamente)" do
       let(:sessao) { create(:session, status: :scheduled) }
 
-      it "levanta erro ao tentar mark_as_missed! em sessão agendada" do
-        expect { sessao.mark_as_missed! }.to raise_error(described_class::InvalidTransition)
+      it "levanta erro ao tentar mark_as_absent! em sessão agendada" do
+        expect { sessao.mark_as_absent! }.to raise_error(described_class::InvalidTransition)
       end
     end
 
@@ -371,11 +371,11 @@ RSpec.describe Session, type: :model do
       end
     end
 
-    describe "missed → qualquer estado (proibida)" do
-      let(:sessao) { create(:session, :missed) }
+    describe "absent → qualquer estado (proibida)" do
+      let(:sessao) { create(:session, :absent) }
 
-      it "levanta erro ao tentar mark_as_missed! novamente" do
-        expect { sessao.mark_as_missed! }.to raise_error(described_class::InvalidTransition)
+      it "levanta erro ao tentar mark_as_absent! novamente" do
+        expect { sessao.mark_as_absent! }.to raise_error(described_class::InvalidTransition)
       end
 
       it "levanta erro ao tentar cancel!" do
@@ -397,7 +397,7 @@ RSpec.describe Session, type: :model do
 
     let!(:sessao_agendada)   { create(:session, user: cliente, status: :scheduled) }
     let!(:sessao_completada) { create(:session, :past, user: cliente, status: :completed) }
-    let!(:sessao_falta)      { create(:session, :missed, user: cliente) }
+    let!(:sessao_falta)      { create(:session, :absent, user: cliente) }
     let!(:sessao_cancelada)  { create(:session, :cancelled, user: cliente) }
 
     describe ".scheduled" do
@@ -414,10 +414,10 @@ RSpec.describe Session, type: :model do
       end
     end
 
-    describe ".missed" do
-      it "retorna apenas sessões com status missed" do
-        expect(described_class.missed).to include(sessao_falta)
-        expect(described_class.missed).not_to include(sessao_agendada, sessao_completada, sessao_cancelada)
+    describe ".absent" do
+      it "retorna apenas sessões com status absent" do
+        expect(described_class.absent).to include(sessao_falta)
+        expect(described_class.absent).not_to include(sessao_agendada, sessao_completada, sessao_cancelada)
       end
     end
 
@@ -572,31 +572,31 @@ RSpec.describe Session, type: :model do
       expect(session.cancellable?).to be false
     end
 
-    it "retorna false quando status é missed" do
-      session.status = :missed
+    it "retorna false quando status é absent" do
+      session.status = :absent
       expect(session.cancellable?).to be false
     end
   end
 
-  describe "#can_mark_as_missed?" do
+  describe "#can_mark_as_absent?" do
     it "retorna true apenas quando status é completed" do
       session.status = :completed
-      expect(session.can_mark_as_missed?).to be true
+      expect(session.can_mark_as_absent?).to be true
     end
 
     it "retorna false quando status é scheduled" do
       session.status = :scheduled
-      expect(session.can_mark_as_missed?).to be false
+      expect(session.can_mark_as_absent?).to be false
     end
 
-    it "retorna false quando status é missed" do
-      session.status = :missed
-      expect(session.can_mark_as_missed?).to be false
+    it "retorna false quando status é absent" do
+      session.status = :absent
+      expect(session.can_mark_as_absent?).to be false
     end
 
     it "retorna false quando status é cancelled" do
       session.status = :cancelled
-      expect(session.can_mark_as_missed?).to be false
+      expect(session.can_mark_as_absent?).to be false
     end
   end
 
@@ -643,13 +643,13 @@ RSpec.describe Session, type: :model do
       let!(:sessao) { create(:session, :past, status: :completed) }
 
       it "registra um AuditLog" do
-        expect { sessao.mark_as_missed! }.to change(AuditLog, :count).by(1)
+        expect { sessao.mark_as_absent! }.to change(AuditLog, :count).by(1)
       end
 
-      it "registra action 'mark_as_missed'" do
-        sessao.mark_as_missed!
+      it "registra action 'mark_as_absent'" do
+        sessao.mark_as_absent!
         log = AuditLog.last
-        expect(log.action).to eq("mark_as_missed")
+        expect(log.action).to eq("mark_as_absent")
         expect(log.entity_type).to eq("Session")
         expect(log.entity_id).to eq(sessao.id)
       end

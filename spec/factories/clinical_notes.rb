@@ -2,8 +2,8 @@
 
 FactoryBot.define do
   factory :clinical_note do
-    association :session, factory: %i[session past]
-    user { session.user }
+    user { create(:user, :client) }
+    session { create(:session, :past, user: user) }
     content { Faker::Lorem.paragraph(sentence_count: 5) }
   end
 end

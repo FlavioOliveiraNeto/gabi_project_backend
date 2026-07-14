@@ -54,8 +54,10 @@ class SessionGeneratorService
 
       datetime = Time.zone.local(date.year, date.month, date.day, hour.to_i, min.to_i)
 
-      patient.sessions.find_or_create_by!(scheduled_at: datetime, session_type: :regular) do |session|
-        session.status = :scheduled
+      patient.sessions.find_or_create_by!(scheduled_at: datetime, session_type: :recurring) do |session|
+        session.status     = :scheduled
+        session.start_time = datetime
+        session.end_time   = datetime + 50.minutes
       end
     rescue ActiveRecord::RecordInvalid => e
       Rails.logger.warn "[SessionGenerator] Conflito ignorado para paciente ##{patient.id} em #{datetime}: #{e.message}"

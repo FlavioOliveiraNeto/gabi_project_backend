@@ -4,8 +4,9 @@ FactoryBot.define do
   factory :session do
     association :user, factory: %i[user client]
     recurring_schedule { nil }
-    start_time   { 1.week.from_now.beginning_of_hour }
-    end_time     { 1.week.from_now.beginning_of_hour + 50.minutes }
+    scheduled_at { nil }
+    start_time   { scheduled_at || 1.week.from_now.beginning_of_hour }
+    end_time     { start_time + 50.minutes }
     status       { :scheduled }
     session_type { :recurring }
     meet_link    { nil }
@@ -16,8 +17,8 @@ FactoryBot.define do
       end_time   { 1.week.ago.beginning_of_hour + 50.minutes }
     end
 
-    trait :missed do
-      status     { :missed }
+    trait :absent do
+      status     { :absent }
       start_time { 2.weeks.ago.beginning_of_hour }
       end_time   { 2.weeks.ago.beginning_of_hour + 50.minutes }
     end
@@ -31,6 +32,7 @@ FactoryBot.define do
     end
 
     trait :past do
+      status     { :completed }
       start_time { 1.week.ago.beginning_of_hour }
       end_time   { 1.week.ago.beginning_of_hour + 50.minutes }
     end

@@ -12,9 +12,13 @@ class Therapists::ClinicalNotesController < ApplicationController
   end
 
   def create
+    session = @patient.sessions.find_by(id: params[:session_id])
+    return render json: { error: "Sessão não encontrada." }, status: :not_found unless session
+
     note = @patient.clinical_notes.build(
+      session: session,
       content: params[:content],
-      date: Time.current,
+      date: session.start_time,
       therapist: current_user
     )
 

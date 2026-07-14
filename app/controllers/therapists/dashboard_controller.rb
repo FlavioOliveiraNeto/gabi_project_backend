@@ -9,7 +9,7 @@ class Therapists::DashboardController < ApplicationController
       .joins(:user)
       .includes(:user)
       .where(users: { therapist_id: therapist.id })
-      .order(:scheduled_at)
+      .order(:start_time)
 
     patients = User
       .where(therapist_id: therapist.id)
@@ -34,11 +34,11 @@ class Therapists::DashboardController < ApplicationController
 
     {
       active_clients: therapist.patients.count,
-      sessions_today: sessions.where(scheduled_at: Time.zone.now.all_day).count,
-      sessions_this_week: sessions.where(scheduled_at: Time.zone.now.all_week).count,
+      sessions_today: sessions.where(start_time: Time.zone.now.all_day).count,
+      sessions_this_week: sessions.where(start_time: Time.zone.now.all_week).count,
       sessions_completed_this_week: sessions
         .where(status: :completed)
-        .where(scheduled_at: Time.zone.now.all_week)
+        .where(start_time: Time.zone.now.all_week)
         .count
     }
   end
@@ -51,7 +51,7 @@ class Therapists::DashboardController < ApplicationController
       all_schedules    = p.weekly_schedules.to_a
       active_schedules = all_schedules.select(&:active?)
 
-      all_sessions  = p.sessions.sort_by(&:scheduled_at)
+      all_sessions  = p.sessions.sort_by(&:start_time)
       by_status     = all_sessions.group_by(&:status)
       extra_sessions = all_sessions.select { |s| s.session_type == "extra" }
 
@@ -72,7 +72,7 @@ class Therapists::DashboardController < ApplicationController
         session_time: active_schedules.first&.time,
 
         extra_sessions: extra_sessions.map do |s|
-          local_time = s.scheduled_at.in_time_zone(Time.zone)
+          local_time = s.start_time.in_time_zone(Time.zone)
           { id: s.id, date: local_time.to_date.iso8601, time: local_time.strftime("%H:%M"), status: s.status }
         end,
 
@@ -90,7 +90,7 @@ class Therapists::DashboardController < ApplicationController
 
   def build_calendar_sessions(sessions)
     sessions.map do |s|
-      local_time = s.scheduled_at.in_time_zone(Time.zone)
+      local_time = s.start_time.in_time_zone(Time.zone)
       {
         id: s.id,
         date: local_time.to_date.iso8601,

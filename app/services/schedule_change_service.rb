@@ -44,7 +44,7 @@ class ScheduleChangeService
 
   def cancel_scheduled_sessions_from!(date)
     @patient.sessions
-            .where(session_type: :regular, status: :scheduled)
+            .where(session_type: :recurring, status: :scheduled)
             .where("scheduled_at >= ?", date.beginning_of_day)
             .update_all(
               status:     Session.statuses[:cancelled],

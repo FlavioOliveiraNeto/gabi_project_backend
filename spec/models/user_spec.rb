@@ -165,20 +165,20 @@ RSpec.describe User, type: :model do
     end
   end
 
-  describe "#force_password_change?" do
-    context "when force_password_change é false" do
-      let(:user) { build(:user, force_password_change: false) }
+  describe "#must_change_password?" do
+    context "when must_change_password é false" do
+      let(:user) { build(:user, must_change_password: false) }
 
       it "retorna false" do
-        expect(user.force_password_change?).to be false
+        expect(user.must_change_password?).to be false
       end
     end
 
-    context "when force_password_change é true" do
-      let(:user) { build(:user, :with_force_password_change) }
+    context "when must_change_password é true" do
+      let(:user) { build(:user, :must_change_password) }
 
       it "retorna true" do
-        expect(user.force_password_change?).to be true
+        expect(user.must_change_password?).to be true
       end
     end
   end
@@ -224,8 +224,8 @@ RSpec.describe User, type: :model do
   describe "valores padrão" do
     let(:novo_usuario) { described_class.new }
 
-    it "force_password_change começa como false" do
-      expect(novo_usuario.force_password_change).to be false
+    it "must_change_password começa como false" do
+      expect(novo_usuario.must_change_password).to be false
     end
 
     it "active começa como true" do
@@ -237,21 +237,21 @@ RSpec.describe User, type: :model do
   # Senha temporária — cadastro pela terapeuta
   # ---------------------------------------------------------------------------
   describe "senha temporária (criado pela terapeuta)" do
-    context "when criado sem force_password_change explícito" do
-      it "force_password_change é false por padrão" do
+    context "when criado sem must_change_password explícito" do
+      it "must_change_password é false por padrão" do
         user = build(:user)
-        expect(user.force_password_change).to be false
+        expect(user.must_change_password).to be false
       end
     end
 
-    context "when criado com force_password_change: true" do
-      let(:user_com_senha_temp) { build(:user, :with_force_password_change) }
+    context "when criado com must_change_password: true" do
+      let(:user_com_senha_temp) { build(:user, :must_change_password) }
 
-      it "force_password_change é true" do
-        expect(user_com_senha_temp.force_password_change).to be true
+      it "must_change_password é true" do
+        expect(user_com_senha_temp.must_change_password).to be true
       end
 
-      it "o usuário é válido mesmo com force_password_change true" do
+      it "o usuário é válido mesmo com must_change_password true" do
         expect(user_com_senha_temp).to be_valid
       end
     end

@@ -17,7 +17,7 @@ class ClinicalNote < ApplicationRecord
 
   validates :user,    presence: true
   validates :session, presence: true
-  validates :content, presence: true
+  validates :content, presence: true, length: { maximum: 10_000 }
 
   validates :session_id, uniqueness: { message: "já possui uma anotação clínica" }
 

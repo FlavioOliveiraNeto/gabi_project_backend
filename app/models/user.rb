@@ -56,15 +56,12 @@ class User < ApplicationRecord
 
   after_update :cancel_future_sessions_if_deactivated
 
-  # ── Compatibilidade legada ───────────────────────────────────────────────────
-
-  # Controllers antigos usam must_change_password?; delegamos para o novo campo.
   def must_change_password?
-    force_password_change?
+    must_change_password
   end
 
   def clear_must_change_password!
-    update_column(:force_password_change, false)
+    update_column(:must_change_password, false)
   end
 
   private

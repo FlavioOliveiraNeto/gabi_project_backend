@@ -18,8 +18,15 @@ module Helpers
             "Erro: #{e.message}"
     end
 
-    # Alias semântico — equivalente a json_response.
-    alias json_body json_response
+    # Parseia o body da resposta como JSON com chaves string.
+    #
+    # Retorna: Hash com string keys, ex: { "error" => "Unauthorized" }
+    #
+    def json_body
+      JSON.parse(response.body)
+    rescue JSON::ParserError
+      {}
+    end
 
     # Acessa um atributo aninhado com sintaxe de dig usando symbol keys.
     #
