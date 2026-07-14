@@ -1,155 +1,362 @@
+# frozen_string_literal: true
+
 require "rails_helper"
 
 RSpec.describe User, type: :model do
-  # Associações 
-  describe "associações" do
-    it { is_expected.to belong_to(:therapist).class_name("User").optional }
-    it { is_expected.to have_many(:patients).class_name("User").with_foreign_key("therapist_id").dependent(:destroy) }
-    it { is_expected.to have_many(:sessions).dependent(:destroy) }
-    it { is_expected.to have_many(:clinical_notes).dependent(:destroy) }
-    it { is_expected.to have_many(:patient_notes).dependent(:destroy) }
-    it { is_expected.to have_many(:weekly_schedules).dependent(:destroy) }
-  end
+  subject(:user) { build(:user) }
 
-  # Enums
-  describe "enums" do
-    it { is_expected.to define_enum_for(:role).with_values(therapist: 0, client: 1) }
-  end
-
+  # ---------------------------------------------------------------------------
   # Validações
+  # ---------------------------------------------------------------------------
   describe "validações" do
-    it "é válido com dados mínimos" do
-      expect(build(:user, :therapist)).to be_valid
+    context "com dados válidos" do
+      it "é válido" do
+        expect(user).to be_valid
+      end
     end
 
-    describe "email" do
-      it "é inválido sem email" do
-        user = build(:user, email: "")
-        expect(user).not_to be_valid
+    describe "presença de campos obrigatórios" do
+      it "é inválido sem name" do
+        user.name = nil
+        expect(user).to be_invalid
+        expect(user.errors[:name]).to be_present
       end
 
-      it "é inválido com formato incorreto" do
-        user = build(:user, email: "nao-e-um-email")
-        expect(user).not_to be_valid
+      it "é inválido sem email" do
+        user.email = nil
+        expect(user).to be_invalid
         expect(user.errors[:email]).to be_present
       end
 
-      it "é inválido com email duplicado" do
-        create(:user, email: "dup@example.com")
-        expect(build(:user, email: "dup@example.com")).not_to be_valid
+      it "é inválido sem password" do
+        user.password = nil
+        expect(user).to be_invalid
+        expect(user.errors[:password]).to be_present
       end
 
-      it "é inválido com email duplicado (case-insensitive)" do
-        create(:user, email: "dup@example.com")
-        expect(build(:user, email: "DUP@example.com")).not_to be_valid
+      it "é inválido sem role" do
+        user.role = nil
+        expect(user).to be_invalid
+        expect(user.errors[:role]).to be_present
       end
     end
 
-    describe "google_meet_link" do
-      it "é válido com URL http" do
-        expect(build(:user, google_meet_link: "http://meet.google.com/abc")).to be_valid
+    describe "formato do email" do
+      it "é inválido com email sem @" do
+        user.email = "emailinvalido.com"
+        expect(user).to be_invalid
+        expect(user.errors[:email]).to be_present
       end
 
-      it "é válido com URL https" do
-        expect(build(:user, google_meet_link: "https://meet.google.com/abc")).to be_valid
+      it "é inválido com email sem domínio" do
+        user.email = "usuario@"
+        expect(user).to be_invalid
+        expect(user.errors[:email]).to be_present
       end
 
-      it "é válido quando em branco (string vazia)" do
-        expect(build(:user, google_meet_link: "")).to be_valid
+      it "é inválido com email com espaços" do
+        user.email = "usuario @clinica.com"
+        expect(user).to be_invalid
+        expect(user.errors[:email]).to be_present
       end
 
-      it "é válido quando em branco (nil)" do
-        expect(build(:user, google_meet_link: nil)).to be_valid
+      it "é válido com email bem formatado" do
+        user.email = "gabriella@clinicafelix.com.br"
+        expect(user).to be_valid
+      end
+    end
+
+    describe "unicidade do email" do
+      let!(:existente) { create(:user, email: "duplicado@clinica.com") }
+
+      it "é inválido quando email já existe" do
+        user.email = "duplicado@clinica.com"
+        expect(user).to be_invalid
+        expect(user.errors[:email]).to be_present
       end
 
-      it "é inválido sem http:// ou https://" do
-        user = build(:user, google_meet_link: "meet.google.com/abc")
-        expect(user).not_to be_valid
-        expect(user.errors[:google_meet_link]).to be_present
+      it "é inválido quando email já existe em caixa diferente (case insensitive)" do
+        user.email = "DUPLICADO@CLINICA.COM"
+        expect(user).to be_invalid
+        expect(user.errors[:email]).to be_present
+      end
+    end
+
+    describe "tamanho da senha" do
+      it "é inválido com senha menor que 8 caracteres" do
+        user.password = "abc123"
+        expect(user).to be_invalid
+        expect(user.errors[:password]).to be_present
+      end
+
+      it "é válido com senha de exatamente 8 caracteres" do
+        user.password = "Senha@12"
+        expect(user).to be_valid
+      end
+
+      it "é válido com senha longa" do
+        user.password = "SenhaSegura@2025!"
+        expect(user).to be_valid
+      end
+    end
+
+    describe "inclusão de role" do
+      it "é válido com role therapist" do
+        user.role = :therapist
+        expect(user).to be_valid
+      end
+
+      it "é válido com role client" do
+        user.role = :client
+        expect(user).to be_valid
+      end
+
+      it "levanta ArgumentError com role desconhecido" do
+        expect { user.role = :admin }.to raise_error(ArgumentError)
       end
     end
   end
 
-  # Roles
-  describe "roles" do
-    context "quando o usuário é terapeuta" do
-      subject(:user) { build(:user, :therapist) }
-
-      it "é identificado como therapist?" do
-        expect(user.therapist?).to be(true)
-      end
-
-      it "não é identificado como client?" do
-        expect(user.client?).to be(false)
-      end
-    end
-
-    context "quando o usuário é cliente" do
-      subject(:user) { build(:user, :client) }
-
-      it "é identificado como client?" do
-        expect(user.client?).to be(true)
-      end
-
-      it "não é identificado como therapist?" do
-        expect(user.therapist?).to be(false)
-      end
-    end
+  # ---------------------------------------------------------------------------
+  # Associações
+  # ---------------------------------------------------------------------------
+  describe "associações" do
+    it { is_expected.to have_many(:audit_logs) }
+    it { is_expected.to have_many(:sessions) }
+    it { is_expected.to have_many(:recurring_schedules) }
   end
 
+  # ---------------------------------------------------------------------------
   # Métodos de instância
-  describe "#must_change_password?" do
-    it "retorna true quando must_change_password é true" do
-      user = build(:user, :must_change_password)
-      expect(user.must_change_password?).to be(true)
+  # ---------------------------------------------------------------------------
+  describe "#therapist?" do
+    context "when role é therapist" do
+      let(:user) { build(:user, :therapist) }
+
+      it "retorna true" do
+        expect(user.therapist?).to be true
+      end
     end
 
-    it "retorna false quando must_change_password é false" do
-      user = build(:user, must_change_password: false)
-      expect(user.must_change_password?).to be(false)
+    context "when role é client" do
+      let(:user) { build(:user, :client) }
+
+      it "retorna false" do
+        expect(user.therapist?).to be false
+      end
     end
   end
 
-  describe "#clear_must_change_password!" do
-    it "define must_change_password como false no banco" do
-      user = create(:user, :must_change_password)
-      user.clear_must_change_password!
-      expect(user.reload.must_change_password).to be(false)
+  describe "#client?" do
+    context "when role é client" do
+      let(:user) { build(:user, :client) }
+
+      it "retorna true" do
+        expect(user.client?).to be true
+      end
+    end
+
+    context "when role é therapist" do
+      let(:user) { build(:user, :therapist) }
+
+      it "retorna false" do
+        expect(user.client?).to be false
+      end
     end
   end
 
-  # Destruição em cascata
-  describe "destruição em cascata" do
-    let(:therapist) { create(:user, :therapist) }
-    let!(:patient)  { create(:user, :client, therapist: therapist) }
+  describe "#force_password_change?" do
+    context "when force_password_change é false" do
+      let(:user) { build(:user, force_password_change: false) }
 
-    it "destrói os pacientes ao destruir o terapeuta" do
-      expect { therapist.destroy }.to change(User, :count).by(-2)
+      it "retorna false" do
+        expect(user.force_password_change?).to be false
+      end
     end
 
-    it "destrói as sessões dos pacientes ao destruir o terapeuta" do
-      create(:session, user: patient)
-      expect { therapist.destroy }.to change(Session, :count).by(-1)
+    context "when force_password_change é true" do
+      let(:user) { build(:user, :with_force_password_change) }
+
+      it "retorna true" do
+        expect(user.force_password_change?).to be true
+      end
+    end
+  end
+
+  # ---------------------------------------------------------------------------
+  # Segurança — armazenamento da senha
+  # ---------------------------------------------------------------------------
+  describe "segurança da senha" do
+    let(:user) { create(:user, password: "Senha@123!") }
+
+    it "não armazena a senha em texto plano" do
+      expect(user.encrypted_password).not_to eq("Senha@123!")
     end
 
-    it "destrói as sessões ao destruir o paciente" do
-      create(:session, user: patient)
-      expect { patient.destroy }.to change(Session, :count).by(-1)
+    it "armazena a senha como hash bcrypt (começa com $2)" do
+      expect(user.encrypted_password).to start_with("$2")
     end
 
-    it "destrói os weekly_schedules ao destruir o paciente" do
-      create(:weekly_schedule, user: patient)
-      expect { patient.destroy }.to change(WeeklySchedule, :count).by(-1)
+    it "dois usuários com a mesma senha têm encrypted_password diferentes (salt único)" do
+      outro = create(:user, password: "Senha@123!")
+      expect(user.encrypted_password).not_to eq(outro.encrypted_password)
+    end
+  end
+
+  # ---------------------------------------------------------------------------
+  # Normalização do email
+  # ---------------------------------------------------------------------------
+  describe "normalização do email" do
+    it "converte email para downcase antes de salvar" do
+      user = create(:user, email: "GABRIELLA@CLINICA.COM.BR")
+      expect(user.reload.email).to eq("gabriella@clinica.com.br")
     end
 
-    it "destrói as clinical_notes ao destruir o paciente" do
-      create(:clinical_note, user: patient, therapist: therapist)
-      expect { patient.destroy }.to change(ClinicalNote, :count).by(-1)
+    it "mantém o email em downcase quando já está em minúsculas" do
+      user = create(:user, email: "gabriella@clinica.com.br")
+      expect(user.reload.email).to eq("gabriella@clinica.com.br")
+    end
+  end
+
+  # ---------------------------------------------------------------------------
+  # Valores padrão
+  # ---------------------------------------------------------------------------
+  describe "valores padrão" do
+    let(:novo_usuario) { described_class.new }
+
+    it "force_password_change começa como false" do
+      expect(novo_usuario.force_password_change).to be false
     end
 
-    it "destrói as patient_notes ao destruir o usuário" do
-      create(:patient_note, user: patient)
-      expect { patient.destroy }.to change(PatientNote, :count).by(-1)
+    it "active começa como true" do
+      expect(novo_usuario.active).to be true
+    end
+  end
+
+  # ---------------------------------------------------------------------------
+  # Senha temporária — cadastro pela terapeuta
+  # ---------------------------------------------------------------------------
+  describe "senha temporária (criado pela terapeuta)" do
+    context "when criado sem force_password_change explícito" do
+      it "force_password_change é false por padrão" do
+        user = build(:user)
+        expect(user.force_password_change).to be false
+      end
+    end
+
+    context "when criado com force_password_change: true" do
+      let(:user_com_senha_temp) { build(:user, :with_force_password_change) }
+
+      it "force_password_change é true" do
+        expect(user_com_senha_temp.force_password_change).to be true
+      end
+
+      it "o usuário é válido mesmo com force_password_change true" do
+        expect(user_com_senha_temp).to be_valid
+      end
+    end
+  end
+
+  # ---------------------------------------------------------------------------
+  # Escopos de clientes
+  # ---------------------------------------------------------------------------
+  describe "escopos" do
+    let!(:cliente_ativo)    { create(:user, :client, active: true) }
+    let!(:cliente_inativo)  { create(:user, :client, active: false) }
+    let!(:terapeuta)        { create(:user, :therapist, active: true) }
+
+    describe ".clients" do
+      it "retorna apenas usuários com role client" do
+        expect(described_class.clients).to include(cliente_ativo, cliente_inativo)
+        expect(described_class.clients).not_to include(terapeuta)
+      end
+    end
+
+    describe ".active" do
+      it "retorna apenas usuários ativos" do
+        expect(described_class.active).to include(cliente_ativo, terapeuta)
+        expect(described_class.active).not_to include(cliente_inativo)
+      end
+    end
+
+    describe ".inactive" do
+      it "retorna apenas usuários inativos" do
+        expect(described_class.inactive).to include(cliente_inativo)
+        expect(described_class.inactive).not_to include(cliente_ativo, terapeuta)
+      end
+    end
+  end
+
+  # ---------------------------------------------------------------------------
+  # Comportamento ao desativar cliente
+  # ---------------------------------------------------------------------------
+  describe "desativação de cliente" do
+    include_context "with São Paulo timezone"
+
+    let(:cliente) { create(:user, :client, active: true) }
+
+    let!(:sessao_futura) do
+      create(:session,
+        user: cliente,
+        start_time: 1.week.from_now.beginning_of_hour,
+        end_time: 1.week.from_now.beginning_of_hour + 50.minutes,
+        status: :scheduled)
+    end
+
+    let!(:sessao_passada) do
+      create(:session,
+        user: cliente,
+        start_time: 1.week.ago.beginning_of_hour,
+        end_time: 1.week.ago.beginning_of_hour + 50.minutes,
+        status: :completed)
+    end
+
+    context "when active muda para false" do
+      before { cliente.update!(active: false) }
+
+      it "cancela sessões futuras agendadas" do
+        expect(sessao_futura.reload.status).to eq("cancelled")
+      end
+
+      it "preserva o histórico de sessões passadas" do
+        expect(sessao_passada.reload.status).to eq("completed")
+      end
+    end
+
+    context "when cliente permanece ativo" do
+      it "não altera sessões futuras" do
+        expect { cliente.update!(name: "Nome Atualizado") }
+          .not_to(change { sessao_futura.reload.status })
+      end
+    end
+  end
+
+  # ---------------------------------------------------------------------------
+  # Audit trail
+  # ---------------------------------------------------------------------------
+  describe "audit trail" do
+    include_context "with São Paulo timezone"
+
+    let(:performing_user) { create(:user, :therapist) }
+
+    before { Current.user = performing_user }
+    after  { Current.user = nil }
+
+    context "when cliente é desativado" do
+      let(:cliente) { create(:user, :client, active: true) }
+
+      it "registra um AuditLog" do
+        expect { cliente.update!(active: false) }
+          .to change(AuditLog, :count).by(1)
+      end
+
+      it "registra action 'deactivate' e entity correto" do
+        cliente.update!(active: false)
+        log = AuditLog.last
+        expect(log.action).to eq("deactivate")
+        expect(log.entity_type).to eq("User")
+        expect(log.entity_id).to eq(cliente.id)
+      end
     end
   end
 end

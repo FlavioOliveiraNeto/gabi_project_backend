@@ -47,7 +47,7 @@ RSpec.describe "CSRF Protection", type: :request do
       it "retorna 403 com mensagem CSRF" do
         delete destroy_user_session_path
         expect(response).to have_http_status(:forbidden)
-        expect(json_body["error"]).to match(/CSRF/)
+        expect(json_body[:error]).to match(/CSRF/)
       end
     end
 

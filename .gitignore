@@ -43,3 +43,10 @@
 
 # CLAUDE files
 CLAUDE.md
+
+# Status de exemplos RSpec entre execuções
+.rspec_status
+
+# Cassettes VCR — descomente se quiser ignorar no controle de versão
+# (recomendado para cassettes com dados sensíveis ou muito volumosos)
+# /spec/cassettes/

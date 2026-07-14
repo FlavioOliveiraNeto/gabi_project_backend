@@ -16,31 +16,31 @@ RSpec.describe "GET /auth/me", type: :request do
     end
 
     it "inclui o id no payload" do
-      expect(json_body["user"]["id"]).to eq(client.id)
+      expect(json_body[:user][:id]).to eq(client.id)
     end
 
     it "inclui o email no payload" do
-      expect(json_body["user"]["email"]).to eq(client.email)
+      expect(json_body[:user][:email]).to eq(client.email)
     end
 
     it "inclui o nome no payload" do
-      expect(json_body["user"]["name"]).to eq(client.name)
+      expect(json_body[:user][:name]).to eq(client.name)
     end
 
     it "inclui role 'client'" do
-      expect(json_body["user"]["role"]).to eq("client")
+      expect(json_body[:user][:role]).to eq("client")
     end
 
     it "retorna must_change_password: false" do
-      expect(json_body["user"]["must_change_password"]).to be false
+      expect(json_body[:user][:must_change_password]).to be false
     end
 
     it "inclui csrf_token no corpo" do
-      expect(json_body["csrf_token"]).to be_present
+      expect(json_body[:csrf_token]).to be_present
     end
 
     it "csrf_token é string hexadecimal de 64 chars" do
-      expect(json_body["csrf_token"]).to match(/\A[0-9a-f]{64}\z/)
+      expect(json_body[:csrf_token]).to match(/\A[0-9a-f]{64}\z/)
     end
   end
 
@@ -56,29 +56,29 @@ RSpec.describe "GET /auth/me", type: :request do
     end
 
     it "inclui role 'therapist'" do
-      expect(json_body["user"]["role"]).to eq("therapist")
+      expect(json_body[:user][:role]).to eq("therapist")
     end
 
     it "inclui o id do terapeuta" do
-      expect(json_body["user"]["id"]).to eq(therapist.id)
+      expect(json_body[:user][:id]).to eq(therapist.id)
     end
 
     it "inclui o email do terapeuta" do
-      expect(json_body["user"]["email"]).to eq(therapist.email)
+      expect(json_body[:user][:email]).to eq(therapist.email)
     end
 
     it "inclui o nome do terapeuta" do
-      expect(json_body["user"]["name"]).to eq(therapist.name)
+      expect(json_body[:user][:name]).to eq(therapist.name)
     end
 
     it "retorna must_change_password: false para terapeuta" do
-      expect(json_body["user"]["must_change_password"]).to be false
+      expect(json_body[:user][:must_change_password]).to be false
     end
   end
 
   # must_change_password
   context "quando must_change_password: true" do
-    let(:client) { create(:user, :client, :must_change_password, therapist: therapist) }
+    let(:client) { create(:user, :client, :with_force_password_change, therapist: therapist) }
 
     before do
       auth_headers_for(client)
@@ -90,7 +90,7 @@ RSpec.describe "GET /auth/me", type: :request do
     end
 
     it "reflete must_change_password: true no payload" do
-      expect(json_body["user"]["must_change_password"]).to be true
+      expect(json_body[:user][:must_change_password]).to be true
     end
   end
 
@@ -98,15 +98,15 @@ RSpec.describe "GET /auth/me", type: :request do
   context "determinismo do csrf_token por JTI" do
     before do
       post user_session_path,
-           params: { user: { email: client.email, password: "Password@123" } },
+           params: { user: { email: client.email, password: "Senha@123!" } },
            as: :json
-      @login_csrf = json_body["csrf_token"]
+      @login_csrf = json_body[:csrf_token]
 
       get auth_me_path
     end
 
     it "retorna o mesmo csrf_token que o login para a mesma sessão JWT" do
-      expect(json_body["csrf_token"]).to eq(@login_csrf)
+      expect(json_body[:csrf_token]).to eq(@login_csrf)
     end
 
     it "gera csrf_token diferente após logout e novo login (JTI rotacionado)" do
@@ -115,9 +115,9 @@ RSpec.describe "GET /auth/me", type: :request do
       delete destroy_user_session_path, headers: { "X-CSRF-Token" => first_csrf }
 
       post user_session_path,
-           params: { user: { email: client.email, password: "Password@123" } },
+           params: { user: { email: client.email, password: "Senha@123!" } },
            as: :json
-      second_csrf = json_body["csrf_token"]
+      second_csrf = json_body[:csrf_token]
 
       expect(second_csrf).not_to eq(first_csrf)
     end
@@ -132,12 +132,12 @@ RSpec.describe "GET /auth/me", type: :request do
 
     it "não inclui user no corpo" do
       get auth_me_path
-      expect(json_body["user"]).to be_nil
+      expect(json_body[:user]).to be_nil
     end
 
     it "não inclui csrf_token no corpo" do
       get auth_me_path
-      expect(json_body["csrf_token"]).to be_nil
+      expect(json_body[:csrf_token]).to be_nil
     end
   end
 
@@ -186,8 +186,8 @@ RSpec.describe "GET /auth/me", type: :request do
 
       get auth_me_path
 
-      expect(json_body["user"]["id"]).to eq(client.id)
-      expect(json_body["user"]["id"]).not_to eq(other_client.id)
+      expect(json_body[:user][:id]).to eq(client.id)
+      expect(json_body[:user][:id]).not_to eq(other_client.id)
     end
   end
 end

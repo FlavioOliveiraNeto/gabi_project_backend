@@ -3,7 +3,14 @@ class ApplicationController < ActionController::Base
 
   prepend_before_action :validate_csrf_token!
 
+  # Popula Current.user para que os callbacks de auditoria saibam quem agiu.
+  before_action :set_current_user
+
   protected
+
+  def set_current_user
+    Current.user = current_user
+  end
 
   def after_sign_in_path_for(resource)
     if resource.therapist?

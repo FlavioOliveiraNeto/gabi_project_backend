@@ -1,80 +1,82 @@
+# frozen_string_literal: true
+
 class Therapists::SessionsController < ApplicationController
   before_action :authenticate_user!
   before_action :ensure_therapist!
 
-  ALLOWED_SESSION_TYPES = %w[regular extra].freeze
-
-  ALLOWED_STATUSES = %w[absent cancelled].freeze
-
-  # "falta" só é permitida após a sessão ter sido finalizada pelo job
-  ALLOWED_TRANSITIONS = {
-    "scheduled" => %w[cancelled],
-    "completed" => %w[absent cancelled],
-    "absent"    => %w[cancelled],
-    "cancelled" => []
-  }.freeze
-
+  # POST /therapists/sessions
   def create
-    patient = current_user.patients.find(params[:patient_id])
+    client = current_user.patients.find(params[:client_id])
 
-    requested_type = params[:session_type].to_s
-    unless requested_type.empty? || ALLOWED_SESSION_TYPES.include?(requested_type)
-      render json: { error: "Tipo de sessão inválido. Use 'regular' ou 'extra'." }, status: :unprocessable_entity
-      return
-    end
-
-    session = patient.sessions.build(
-      scheduled_at: params[:scheduled_at],
-      status: :scheduled,
-      session_type: requested_type.presence || :regular
+    session = client.sessions.build(
+      start_time:   params[:start_time],
+      end_time:     params[:end_time],
+      session_type: params[:session_type].presence || :recurring,
+      meet_link:    params[:meet_link],
+      status:       :scheduled
     )
 
     if session.save
-      render json: session, status: :created
+      render json: session_json(session), status: :created
     else
       render json: { errors: session.errors.full_messages }, status: :unprocessable_entity
     end
   end
 
+  # PATCH /therapists/sessions/:id
   def update
-    session = Session.joins(:user)
-                     .where(users: { therapist_id: current_user.id })
-                     .find(params[:id])
-
+    session = client_session(params[:id])
     new_status = params[:status].to_s
 
-    unless ALLOWED_STATUSES.include?(new_status)
-      render json: { error: "Status inválido. A terapeuta só pode marcar: #{ALLOWED_STATUSES.join(', ')}." }, status: :unprocessable_entity
-      return
-    end
+    result = case new_status
+             when "cancelled"  then session.cancel!
+             when "missed"     then session.mark_as_missed!
+             else
+               return render json: { error: "Status inválido: '#{new_status}'." }, status: :unprocessable_entity
+             end
 
-    allowed_next = ALLOWED_TRANSITIONS[session.status]
-    unless allowed_next.include?(new_status)
-      render json: {
-        error: "Transição inválida: sessão '#{session.status}' não pode ser alterada para '#{new_status}'."
-      }, status: :unprocessable_entity
-      return
-    end
-
-    if session.update(status: new_status)
-      render json: session
-    else
-      render json: { errors: session.errors.full_messages }, status: :unprocessable_entity
-    end
+    render json: session_json(session.reload)
+  rescue Session::InvalidTransition => e
+    render json: { error: e.message }, status: :unprocessable_entity
   end
 
+  # DELETE /therapists/sessions/:id
   def destroy
-    session = Session.joins(:user)
-                     .where(users: { therapist_id: current_user.id })
-                     .find(params[:id])
-
-    session.destroy
+    session = client_session(params[:id])
+    session.cancel!
     head :no_content
+  rescue Session::InvalidTransition => e
+    render json: { error: e.message }, status: :unprocessable_entity
   end
 
   private
 
   def ensure_therapist!
     render json: { error: "Acesso restrito." }, status: :forbidden unless current_user.therapist?
+  end
+
+  # Busca uma sessão cujo usuário (cliente) pertence à terapeuta atual
+  def client_session(id)
+    Session.joins(:user)
+           .where(users: { therapist_id: current_user.id })
+           .find(id)
+  rescue ActiveRecord::RecordNotFound
+    render json: { error: "Sessão não encontrada." }, status: :not_found and raise
+  end
+
+  def session_json(session)
+    {
+      id:           session.id,
+      start_time:   session.start_time&.iso8601,
+      end_time:     session.end_time&.iso8601,
+      status:       session.status,
+      session_type: session.session_type,
+      meet_link:    session.meet_link,
+      client: {
+        id:    session.user.id,
+        name:  session.user.name,
+        email: session.user.email
+      }
+    }
   end
 end

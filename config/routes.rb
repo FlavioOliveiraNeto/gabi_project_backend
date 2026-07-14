@@ -13,7 +13,7 @@ Rails.application.routes.draw do
 
   get "up" => "rails/health#show", as: :rails_health_check
 
-  get "auth/me", to: "auth#me"
+  get "auth/me", to: "auth#me", defaults: { format: :json }
 
   namespace :clients do
     get :dashboard, to: "dashboard#index"
@@ -33,8 +33,16 @@ Rails.application.routes.draw do
                 only: %i[index create show update destroy],
                 controller: "clinical_notes",
                 as: :clinical_notes
+
+      # Agendas recorrentes por cliente
+      resources :recurring_schedules, only: %i[index show create update destroy],
+                param: :id
     end
 
+    # Sessões avulsas e extra (client_id via params)
     resources :sessions, only: %i[create update destroy]
+
+    # Bloqueios de agenda da terapeuta
+    resources :calendar_blocks, only: %i[index show create update destroy]
   end
 end
