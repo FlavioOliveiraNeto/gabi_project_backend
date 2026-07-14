@@ -1,40 +1,60 @@
 require 'rails_helper'
 
 RSpec.describe CleanupJwtDenylistJob, type: :job do
-  describe "#perform" do
-    let!(:expired_token1) { create(:jwt_denylist, :expired) }
-    let!(:expired_token2) { create(:jwt_denylist, exp: 2.hours.ago) }
-    let!(:valid_token)    { create(:jwt_denylist, exp: 30.minutes.from_now) }
-
-    it "remove tokens com exp no passado" do
-      expect {
-        described_class.new.perform
-      }.to change(JwtDenylist, :count).by(-2)
+  # .queue_name
+  describe '.queue_name' do
+    it 'é :default' do
+      expect(described_class.queue_name).to eq('default')
     end
+  end
 
-    it "preserva tokens ainda válidos" do
-      described_class.new.perform
-      expect(valid_token.reload).to be_persisted
-    end
+  # #perform
+  describe '#perform' do
+    subject(:perform_job) { described_class.new.perform }
 
-    it "não falha quando não há tokens expirados" do
-      JwtDenylist.where("exp < ?", Time.current).delete_all
+    context 'com tokens expirados e válidos' do
+      let!(:expired_token1) { create(:jwt_denylist, :expired) }
+      let!(:expired_token2) { create(:jwt_denylist, exp: 2.hours.ago) }
+      let!(:valid_token)    { create(:jwt_denylist, exp: 30.minutes.from_now) }
 
-      expect { described_class.new.perform }.not_to raise_error
-    end
+      it 'remove tokens com exp no passado' do
+        expect { perform_job }.to change(JwtDenylist, :count).by(-2)
+      end
 
-    context "idempotência" do
-      it "é seguro de executar múltiplas vezes" do
-        2.times { described_class.new.perform }
-
-        expired_count = JwtDenylist.where("exp < ?", Time.current).count
-        expect(expired_count).to eq(0)
-        expect(JwtDenylist.count).to eq(1) # apenas o válido permanece
+      it 'preserva tokens ainda válidos' do
+        perform_job
+        expect(valid_token.reload).to be_persisted
       end
     end
 
-    it "usa a fila :default" do
-      expect(described_class.queue_name).to eq("default")
+    context 'sem tokens expirados' do
+      it 'não levanta erro' do
+        expect { perform_job }.not_to raise_error
+      end
+    end
+
+    context 'idempotência' do
+      let!(:expired_token) { create(:jwt_denylist, :expired) }
+      let!(:valid_token)   { create(:jwt_denylist, exp: 30.minutes.from_now) }
+
+      it 'é seguro de executar múltiplas vezes' do
+        2.times { described_class.new.perform }
+
+        expect(JwtDenylist.where('exp < ?', Time.current).count).to eq(0)
+        expect(JwtDenylist.count).to eq(1)
+      end
+    end
+
+    context 'no limite de expiração' do
+      it 'não remove token com exp igual a Time.current' do
+        freeze_time do
+          token = create(:jwt_denylist, exp: Time.current)
+
+          perform_job
+
+          expect(token.reload).to be_persisted
+        end
+      end
     end
   end
 end

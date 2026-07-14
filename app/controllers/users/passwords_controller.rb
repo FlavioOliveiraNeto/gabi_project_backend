@@ -2,7 +2,7 @@ class Users::PasswordsController < ApplicationController
   before_action :authenticate_user!
 
   def update
-    password = params[:password]
+    password              = params[:password]
     password_confirmation = params[:password_confirmation]
 
     if password.blank? || password_confirmation.blank?
@@ -18,6 +18,7 @@ class Users::PasswordsController < ApplicationController
     if current_user.update(password: password, password_confirmation: password_confirmation)
       current_user.clear_must_change_password!
       revoke_current_jwt!
+      clear_auth_cookie
       render json: { success: true }
     else
       render json: { error: current_user.errors.full_messages.join(", ") }, status: :unprocessable_entity
@@ -27,16 +28,16 @@ class Users::PasswordsController < ApplicationController
   private
 
   def revoke_current_jwt!
-    auth_header = request.headers["Authorization"]
-    return unless auth_header&.start_with?("Bearer ")
+    token = request.cookies["auth_token"] ||
+            request.headers["Authorization"]&.split(" ")&.last
+    return unless token.present?
 
-    token = auth_header.split(" ").last
-    secret = Rails.application.credentials.devise_jwt_secret_key || Rails.application.secret_key_base
+    secret  = Rails.application.credentials.devise_jwt_secret_key || Rails.application.secret_key_base
     payload, = JWT.decode(token, secret, true, algorithms: ["HS256"])
     return unless payload["jti"].present?
 
     JwtDenylist.revoke_jwt(payload, current_user)
   rescue JWT::DecodeError
-    # token malformado ou assinatura inválida — nada a revogar
+    Rails.logger.error "Erro de decode do JWT."
   end
 end

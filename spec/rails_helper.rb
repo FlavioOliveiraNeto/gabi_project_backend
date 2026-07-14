@@ -1,5 +1,5 @@
 require 'spec_helper'
-ENV['RAILS_ENV'] ||= 'test'
+ENV['RAILS_ENV'] = 'test'
 
 # Chaves de criptografia do Active Record para o ambiente de teste.
 # Devem ser definidas ANTES do boot do Rails para que o config/application.rb

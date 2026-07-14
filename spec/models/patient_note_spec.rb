@@ -3,24 +3,15 @@ require 'rails_helper'
 RSpec.describe PatientNote, type: :model do
   let(:patient) { create(:user, :client) }
 
-  # ─── Associações ────────────────────────────────────────────────────────────
+  # Associações
   describe "associações" do
     it { is_expected.to belong_to(:user) }
   end
 
-  # ─── Validações ─────────────────────────────────────────────────────────────
+  # Validações
   describe "validações" do
-    it "é válido com conteúdo e usuário" do
-      expect(build(:patient_note, user: patient)).to be_valid
-    end
-
     it { is_expected.to validate_presence_of(:content) }
-
-    it "é inválido sem conteúdo" do
-      note = build(:patient_note, user: patient, content: "")
-      expect(note).not_to be_valid
-      expect(note.errors[:content]).to be_present
-    end
+    it { is_expected.to validate_length_of(:content).is_at_most(10_000) }
 
     it "é inválido com conteúdo acima de 10.000 caracteres" do
       note = build(:patient_note, user: patient, content: "a" * 10_001)
@@ -34,7 +25,7 @@ RSpec.describe PatientNote, type: :model do
     end
   end
 
-  # ─── Criptografia ───────────────────────────────────────────────────────────
+  # Criptografia
   describe "criptografia de conteúdo" do
     it "persiste e recupera o conteúdo corretamente" do
       original = "Minha anotação pessoal sobre a sessão de hoje."
@@ -52,7 +43,7 @@ RSpec.describe PatientNote, type: :model do
     end
   end
 
-  # ─── Isolamento por usuário ──────────────────────────────────────────────────
+  # Isolamento por usuário
   describe "isolamento por usuário" do
     let(:other_patient) { create(:user, :client) }
 

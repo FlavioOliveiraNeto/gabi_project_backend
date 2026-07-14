@@ -13,6 +13,8 @@ Rails.application.routes.draw do
 
   get "up" => "rails/health#show", as: :rails_health_check
 
+  get "auth/me", to: "auth#me"
+
   namespace :clients do
     get :dashboard, to: "dashboard#index"
     resources :patient_notes, only: %i[index create update destroy]

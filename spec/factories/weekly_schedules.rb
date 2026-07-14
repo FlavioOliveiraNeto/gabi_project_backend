@@ -16,8 +16,8 @@ FactoryBot.define do
 
     # Schedule encerrado no passado (histórico)
     trait :expired do
-      effective_from  { 3.months.ago.to_date }
-      effective_until { 1.month.ago.to_date }
+      effective_from  { Date.new(2020, 1, 1) }
+      effective_until { Date.new(2020, 12, 31) }
     end
 
     # Schedule que ainda não entrou em vigor

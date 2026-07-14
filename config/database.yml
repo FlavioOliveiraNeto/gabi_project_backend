@@ -16,8 +16,12 @@ default: &default
   adapter: postgresql
   encoding: unicode
   max_connections: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
-  host: localhost
-  username: postgres  
+  # Honor DATABASE_HOST/PORT (set in .env to `db`:5432 for Docker). Falls back to
+  # localhost:5432 so GitHub CI (Postgres service on localhost) and bare-metal
+  # dev both work unchanged.
+  host: <%= ENV.fetch("DATABASE_HOST", "localhost") %>
+  port: <%= ENV.fetch("DATABASE_PORT", 5432) %>
+  username: postgres
   password: postgres
 
 development:

@@ -1,7 +1,7 @@
 require_relative "boot"
+require_relative "../lib/middleware/jwt_cookie_to_header"
 
 require "rails"
-# Pick the frameworks you want:
 require "active_model/railtie"
 require "active_job/railtie"
 require "active_record/railtie"
@@ -14,37 +14,31 @@ require "action_view/railtie"
 require "action_cable/engine"
 # require "rails/test_unit/railtie"
 
-# Require the gems listed in Gemfile, including any gems
-# you've limited to :test, :development, or :production.
 Bundler.require(*Rails.groups)
 
 module GabiProjectBackend
   class Application < Rails::Application
-    # Initialize configuration defaults for originally generated Rails version.
     config.load_defaults 8.1
     config.api_only = true
 
-    # Please, add to the `ignore` list any other `lib` subdirectories that do
-    # not contain `.rb` files, or that should not be reloaded or eager loaded.
-    # Common ones are `templates`, `generators`, or `middleware`, for example.
-    config.autoload_lib(ignore: %w[assets tasks])
+    # `middleware` is ignored because lib/middleware/jwt_cookie_to_header.rb is
+    # manually required above (line 2) and defines a top-level constant, not the
+    # Zeitwerk-expected Middleware::JwtCookieToHeader. Without this, eager_load
+    # (CI/production) raises "uninitialized constant Middleware::JwtCookieToHeader".
+    config.autoload_lib(ignore: %w[assets tasks middleware])
 
-    # Configuration for the application, engines, and railties goes here.
-    #
-    # These settings can be overridden in specific environments using the files
-    # in config/environments, which are processed later.
-    #
     config.middleware.use Rack::Attack
+
+    config.middleware.use ActionDispatch::Cookies
+
+    config.middleware.use JwtCookieToHeader
 
     config.time_zone = "Brasilia"
     config.active_record.default_timezone = :local
     config.beginning_of_week = :sunday
-    # config.eager_load_paths << Rails.root.join("extras")
 
-    # Don't generate system test files.
     config.generators.system_tests = nil
 
-    # Active Record Encryption (lido do .env ou variáveis de ambiente)
     config.active_record.encryption.primary_key        = ENV["AR_ENCRYPTION_PRIMARY_KEY"]
     config.active_record.encryption.deterministic_key  = ENV["AR_ENCRYPTION_DETERMINISTIC_KEY"]
     config.active_record.encryption.key_derivation_salt = ENV["AR_ENCRYPTION_KEY_DERIVATION_SALT"]

@@ -1,5 +1,9 @@
 require 'simplecov'
-SimpleCov.start 'rails'
+SimpleCov.start 'rails' do
+  # Enforce the coverage floor only in CI: locally a dev often runs a single
+  # file (coverage ~0%), and an unconditional floor would fail every such run.
+  minimum_coverage 90 if ENV['CI']
+end
 
 RSpec.configure do |config|
   # rspec-expectations config goes here. You can use an alternate

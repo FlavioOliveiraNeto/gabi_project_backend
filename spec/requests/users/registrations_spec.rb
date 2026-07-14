@@ -1,7 +1,6 @@
 require 'rails_helper'
 
-RSpec.describe "Users::Registrations (Cadastro)", type: :request do
-  # ─── Cadastro ────────────────────────────────────────────────────────────────
+RSpec.describe "Users::Registrations", type: :request do
   describe "POST /users" do
     let(:valid_params) do
       {
@@ -14,89 +13,124 @@ RSpec.describe "Users::Registrations (Cadastro)", type: :request do
       }
     end
 
+    #Fluxo feliz
     context "com dados válidos" do
-      it "cria o usuário com status 201" do
+      it "cria o usuário no banco" do
         expect {
           post user_registration_path, params: valid_params, as: :json
         }.to change(User, :count).by(1)
-
-        expect(response).to have_http_status(:created)
       end
 
-      it "retorna os dados do usuário criado" do
-        post user_registration_path, params: valid_params, as: :json
+      context "ao retornar a resposta" do
+        before { post user_registration_path, params: valid_params, as: :json }
 
-        body = json_body
-        expect(body["user"]["email"]).to eq("novo@example.com")
-        expect(body["user"]["name"]).to eq("Novo Paciente")
-        expect(body["user"]["role"]).to eq("client")
-      end
+        it "retorna 201" do
+          expect(response).to have_http_status(:created)
+        end
 
-      it "cria o usuário com role :client independentemente do que for passado" do
-        post user_registration_path, params: valid_params, as: :json
+        it "inclui id, name, email e role no body" do
+          expect(json_body["user"]).to include(
+            "id"    => be_present,
+            "name"  => "Novo Paciente",
+            "email" => "novo@example.com",
+            "role"  => "client"
+          )
+        end
 
-        user = User.find_by(email: "novo@example.com")
-        expect(user.client?).to be true
+        it "força role :client independentemente do que for passado" do
+          user = User.find_by(email: "novo@example.com")
+          expect(user.client?).to be(true)
+        end
       end
     end
 
-    context "auto-atribuição de terapeuta" do
+    #phone permitido em sign_up_params
+    context "com phone informado" do
+      before do
+        post user_registration_path,
+             params: valid_params.deep_merge(user: { phone: "11999999999" }),
+             as: :json
+      end
+
+      it "salva o phone no banco" do
+        user = User.find_by(email: "novo@example.com")
+        expect(user.phone).to eq("11999999999")
+      end
+    end
+
+    #Auto-atribuição de terapeuta
+    context "sem terapeuta cadastrado" do
+      before { post user_registration_path, params: valid_params, as: :json }
+
+      it "cria o usuário sem associar terapeuta" do
+        user = User.find_by(email: "novo@example.com")
+        expect(user.therapist).to be_nil
+      end
+    end
+
+    context "com terapeuta disponível" do
       let!(:therapist) { create(:user, :therapist) }
 
-      it "associa o primeiro terapeuta disponível ao novo cliente" do
-        post user_registration_path, params: valid_params, as: :json
+      before { post user_registration_path, params: valid_params, as: :json }
 
+      it "associa o primeiro terapeuta disponível ao novo cliente" do
         user = User.find_by(email: "novo@example.com")
         expect(user.therapist).to eq(therapist)
       end
+    end
 
-      context "quando há terapeuta no ENV THERAPIST_EMAIL" do
-        let!(:preferred_therapist) do
-          create(:user, :therapist, email: "gabi@clinica.com")
-        end
+    context "quando THERAPIST_EMAIL está configurado" do
+      let!(:other_therapist)     { create(:user, :therapist) }
+      let!(:preferred_therapist) { create(:user, :therapist, email: "gabi@clinica.com") }
 
-        around do |example|
-          original = ENV["THERAPIST_EMAIL"]
-          ENV["THERAPIST_EMAIL"] = "gabi@clinica.com"
-          example.run
-          ENV["THERAPIST_EMAIL"] = original
-        end
+      around do |example|
+        original = ENV["THERAPIST_EMAIL"]
+        ENV["THERAPIST_EMAIL"] = "gabi@clinica.com"
+        example.run
+        ENV["THERAPIST_EMAIL"] = original
+      end
 
-        it "associa ao terapeuta preferencial" do
-          post user_registration_path, params: valid_params, as: :json
+      before { post user_registration_path, params: valid_params, as: :json }
 
-          user = User.find_by(email: "novo@example.com")
-          expect(user.therapist).to eq(preferred_therapist)
-        end
+      it "associa ao terapeuta preferencial ignorando outros disponíveis" do
+        user = User.find_by(email: "novo@example.com")
+        expect(user.therapist).to eq(preferred_therapist)
       end
     end
 
+    #Dados inválidos
     context "com dados inválidos" do
       it "retorna 422 sem email" do
-        params = valid_params.deep_merge(user: { email: "" })
-        post user_registration_path, params: params, as: :json
+        post user_registration_path,
+             params: valid_params.deep_merge(user: { email: "" }),
+             as: :json
+
+        expect(response).to have_http_status(:unprocessable_content)
+        expect(json_body["errors"]).to include(match(/[Ee]mail/))
+      end
+
+      it "retorna 422 com senhas divergentes" do
+        post user_registration_path,
+             params: valid_params.deep_merge(user: { password_confirmation: "Diferente@456" }),
+             as: :json
 
         expect(response).to have_http_status(:unprocessable_content)
         expect(json_body["errors"]).to be_present
       end
 
-      it "retorna 422 com senhas diferentes" do
-        params = valid_params.deep_merge(user: { password_confirmation: "Diferente@456" })
-        post user_registration_path, params: params, as: :json
-
-        expect(response).to have_http_status(:unprocessable_content)
-      end
-
       it "retorna 422 com email duplicado" do
         create(:user, email: "novo@example.com")
+
         post user_registration_path, params: valid_params, as: :json
 
         expect(response).to have_http_status(:unprocessable_content)
+        expect(json_body["errors"]).to be_present
       end
     end
 
+    #Rate limiting
     context "rate limiting" do
-      it "retorna 429 após 5 tentativas consecutivas" do
+      it "retorna 429 após exceder o limite de tentativas" do
         6.times do |i|
           post user_registration_path,
                params: { user: { name: "X", email: "x#{i}@x.com", password: "a", password_confirmation: "b" } },

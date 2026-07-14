@@ -1,18 +1,20 @@
 module AuthenticationHelpers
-  # Faz login via POST e devolve os headers com o JWT para usar nas requests subsequentes.
   def auth_headers_for(user)
     post user_session_path,
          params: { user: { email: user.email, password: user.password } },
          as: :json
 
-    token = response.headers["Authorization"]
-    raise "Login falhou para #{user.email}: #{response.body}" if token.blank?
+    raise "Login falhou para #{user.email}: #{response.body}" unless response.status == 200
 
-    { "Authorization" => token }
+    csrf_token = JSON.parse(response.body)["csrf_token"]
+    raise "CSRF token ausente no login de #{user.email}" if csrf_token.blank?
+
+    { "X-CSRF-Token" => csrf_token }
   end
 
-  # Parse do body da resposta como JSON.
   def json_body
     JSON.parse(response.body)
+  rescue JSON::ParserError
+    {}
   end
 end

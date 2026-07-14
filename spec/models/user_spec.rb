@@ -1,7 +1,7 @@
-require 'rails_helper'
+require "rails_helper"
 
 RSpec.describe User, type: :model do
-  # ─── Associações ────────────────────────────────────────────────────────────
+  # Associações 
   describe "associações" do
     it { is_expected.to belong_to(:therapist).class_name("User").optional }
     it { is_expected.to have_many(:patients).class_name("User").with_foreign_key("therapist_id").dependent(:destroy) }
@@ -11,15 +11,38 @@ RSpec.describe User, type: :model do
     it { is_expected.to have_many(:weekly_schedules).dependent(:destroy) }
   end
 
-  # ─── Enums ──────────────────────────────────────────────────────────────────
+  # Enums
   describe "enums" do
     it { is_expected.to define_enum_for(:role).with_values(therapist: 0, client: 1) }
   end
 
-  # ─── Validações ─────────────────────────────────────────────────────────────
+  # Validações
   describe "validações" do
     it "é válido com dados mínimos" do
       expect(build(:user, :therapist)).to be_valid
+    end
+
+    describe "email" do
+      it "é inválido sem email" do
+        user = build(:user, email: "")
+        expect(user).not_to be_valid
+      end
+
+      it "é inválido com formato incorreto" do
+        user = build(:user, email: "nao-e-um-email")
+        expect(user).not_to be_valid
+        expect(user.errors[:email]).to be_present
+      end
+
+      it "é inválido com email duplicado" do
+        create(:user, email: "dup@example.com")
+        expect(build(:user, email: "dup@example.com")).not_to be_valid
+      end
+
+      it "é inválido com email duplicado (case-insensitive)" do
+        create(:user, email: "dup@example.com")
+        expect(build(:user, email: "DUP@example.com")).not_to be_valid
+      end
     end
 
     describe "google_meet_link" do
@@ -31,8 +54,11 @@ RSpec.describe User, type: :model do
         expect(build(:user, google_meet_link: "https://meet.google.com/abc")).to be_valid
       end
 
-      it "é válido quando em branco" do
+      it "é válido quando em branco (string vazia)" do
         expect(build(:user, google_meet_link: "")).to be_valid
+      end
+
+      it "é válido quando em branco (nil)" do
         expect(build(:user, google_meet_link: nil)).to be_valid
       end
 
@@ -42,61 +68,68 @@ RSpec.describe User, type: :model do
         expect(user.errors[:google_meet_link]).to be_present
       end
     end
-
-    describe "email" do
-      it "é inválido sem email" do
-        user = build(:user, email: "")
-        expect(user).not_to be_valid
-      end
-
-      it "é inválido com email duplicado" do
-        create(:user, email: "dup@example.com")
-        expect(build(:user, email: "dup@example.com")).not_to be_valid
-      end
-    end
   end
 
-  # ─── Roles ──────────────────────────────────────────────────────────────────
+  # Roles
   describe "roles" do
-    it "identifica corretamente um terapeuta" do
-      expect(build(:user, :therapist).therapist?).to be true
-      expect(build(:user, :therapist).client?).to be false
+    context "quando o usuário é terapeuta" do
+      subject(:user) { build(:user, :therapist) }
+
+      it "é identificado como therapist?" do
+        expect(user.therapist?).to be(true)
+      end
+
+      it "não é identificado como client?" do
+        expect(user.client?).to be(false)
+      end
     end
 
-    it "identifica corretamente um cliente" do
-      expect(build(:user, :client).client?).to be true
-      expect(build(:user, :client).therapist?).to be false
+    context "quando o usuário é cliente" do
+      subject(:user) { build(:user, :client) }
+
+      it "é identificado como client?" do
+        expect(user.client?).to be(true)
+      end
+
+      it "não é identificado como therapist?" do
+        expect(user.therapist?).to be(false)
+      end
     end
   end
 
-  # ─── Métodos de instância ───────────────────────────────────────────────────
+  # Métodos de instância
   describe "#must_change_password?" do
     it "retorna true quando must_change_password é true" do
-      user = build(:user, must_change_password: true)
-      expect(user.must_change_password?).to be true
+      user = build(:user, :must_change_password)
+      expect(user.must_change_password?).to be(true)
     end
 
     it "retorna false quando must_change_password é false" do
       user = build(:user, must_change_password: false)
-      expect(user.must_change_password?).to be false
+      expect(user.must_change_password?).to be(false)
     end
   end
 
   describe "#clear_must_change_password!" do
     it "define must_change_password como false no banco" do
-      user = create(:user, must_change_password: true)
+      user = create(:user, :must_change_password)
       user.clear_must_change_password!
-      expect(user.reload.must_change_password).to be false
+      expect(user.reload.must_change_password).to be(false)
     end
   end
 
-  # ─── Destruição em cascata ──────────────────────────────────────────────────
+  # Destruição em cascata
   describe "destruição em cascata" do
     let(:therapist) { create(:user, :therapist) }
     let!(:patient)  { create(:user, :client, therapist: therapist) }
 
     it "destrói os pacientes ao destruir o terapeuta" do
       expect { therapist.destroy }.to change(User, :count).by(-2)
+    end
+
+    it "destrói as sessões dos pacientes ao destruir o terapeuta" do
+      create(:session, user: patient)
+      expect { therapist.destroy }.to change(Session, :count).by(-1)
     end
 
     it "destrói as sessões ao destruir o paciente" do

@@ -8,7 +8,8 @@
 /.bundle
 
 # Ignore all environment files.
-/.env*
+/.env
+/.env.production
 
 # Ignore all default key files.
 /config/master.key

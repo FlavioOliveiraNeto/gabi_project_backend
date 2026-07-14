@@ -4,12 +4,12 @@ RSpec.describe Session, type: :model do
   let(:therapist) { create(:user, :therapist) }
   let(:patient)   { create(:user, :client, therapist: therapist) }
 
-  # ─── Associações ────────────────────────────────────────────────────────────
+  # Associações
   describe "associações" do
     it { is_expected.to belong_to(:user) }
   end
 
-  # ─── Enums ──────────────────────────────────────────────────────────────────
+  # Enums
   describe "enums" do
     it do
       is_expected.to define_enum_for(:status)
@@ -22,7 +22,7 @@ RSpec.describe Session, type: :model do
     end
   end
 
-  # ─── Validações básicas ─────────────────────────────────────────────────────
+  # Validações básicas
   describe "validações" do
     it "é válido com dados corretos" do
       expect(build(:session, user: patient)).to be_valid
@@ -31,28 +31,29 @@ RSpec.describe Session, type: :model do
     it { is_expected.to validate_presence_of(:scheduled_at) }
   end
 
-  # ─── Unicidade por índice DB ────────────────────────────────────────────────
+  # Unicidade por índice DB 
   describe "constraint de unicidade (user_id, scheduled_at, session_type)" do
+    let(:time) { 3.days.from_now.noon }
+
     it "impede duplicatas com mesmo user, scheduled_at e session_type" do
-      time = 3.days.from_now.noon
       create(:session, user: patient, scheduled_at: time, session_type: :regular)
 
       duplicate = build(:session, user: patient, scheduled_at: time, session_type: :regular)
       expect { duplicate.save! }.to raise_error(ActiveRecord::RecordInvalid)
     end
 
-    it "permite mesmo user e scheduled_at com session_type diferente" do
-      time = 3.days.from_now.noon
+    it "é inválido por conflito de horário quando session_type difere mas o horário é o mesmo" do
       create(:session, user: patient, scheduled_at: time, session_type: :regular)
 
+      # O índice DB (user_id, scheduled_at, session_type) permitiria tipos distintos,
+      # mas no_schedule_conflict rejeita 0 minutos de diferença antes de atingir o índice.
       extra = build(:session, user: patient, scheduled_at: time, session_type: :extra)
-      # session_type :extra não conflita no índice, mas pode conflitar na validação de horário
-      # Aqui testamos apenas o índice — o extra tem o mesmo user/time, mas tipo diferente.
-      # O DB permite; a validação de negócio pode rejeitar por conflito de 1h.
+      expect(extra).not_to be_valid
+      expect(extra.errors[:scheduled_at]).to be_present
     end
   end
 
-  # ─── Validação de conflito de horário ───────────────────────────────────────
+  # Validação de conflito de horário
   describe "validação no_schedule_conflict" do
     let(:patient_b) { create(:user, :client, therapist: therapist) }
     let(:base_time) { 3.days.from_now.noon }
@@ -60,28 +61,43 @@ RSpec.describe Session, type: :model do
     context "quando outro paciente do mesmo terapeuta tem sessão em menos de 1h" do
       before { create(:session, user: patient_b, scheduled_at: base_time, status: :scheduled) }
 
-      it "é inválido com diferença de 30 minutos" do
+      it "é inválido com diferença de +30 minutos" do
         conflicting = build(:session, user: patient, scheduled_at: base_time + 30.minutes)
         expect(conflicting).not_to be_valid
         expect(conflicting.errors[:scheduled_at]).to be_present
       end
 
-      it "é inválido com diferença de 59 minutos" do
+      it "é inválido com diferença de +59 minutos" do
         conflicting = build(:session, user: patient, scheduled_at: base_time + 59.minutes)
         expect(conflicting).not_to be_valid
       end
 
-      it "é inválido com diferença de 1 segundo" do
+      it "é inválido com diferença de +1 segundo" do
         conflicting = build(:session, user: patient, scheduled_at: base_time + 1.second)
         expect(conflicting).not_to be_valid
       end
+
+      it "é inválido com diferença de -30 minutos" do
+        conflicting = build(:session, user: patient, scheduled_at: base_time - 30.minutes)
+        expect(conflicting).not_to be_valid
+        expect(conflicting.errors[:scheduled_at]).to be_present
+      end
     end
 
-    context "quando as sessões têm exatamente 1 hora de diferença" do
+    context "quando as sessões têm exatamente +1 hora de diferença" do
       before { create(:session, user: patient_b, scheduled_at: base_time, status: :scheduled) }
 
       it "é válido pois o intervalo mínimo é exclusivo" do
         non_conflicting = build(:session, user: patient, scheduled_at: base_time + 1.hour)
+        expect(non_conflicting).to be_valid
+      end
+    end
+
+    context "quando as sessões têm exatamente -1 hora de diferença" do
+      before { create(:session, user: patient_b, scheduled_at: base_time, status: :scheduled) }
+
+      it "é válido pois o limite inferior também é exclusivo" do
+        non_conflicting = build(:session, user: patient, scheduled_at: base_time - 1.hour)
         expect(non_conflicting).to be_valid
       end
     end
@@ -127,7 +143,7 @@ RSpec.describe Session, type: :model do
     end
   end
 
-  # ─── .auto_complete_past_sessions! ─────────────────────────────────────────
+  # .auto_complete_past_sessions!
   describe ".auto_complete_past_sessions!" do
     context "sessões mais de 1 hora no passado" do
       let!(:overdue) do
@@ -141,10 +157,16 @@ RSpec.describe Session, type: :model do
       end
     end
 
-    it "marca sessões no limite exato de 1 hora" do
-      session = create(:session, user: patient, scheduled_at: 1.hour.ago, status: :scheduled)
-      Session.auto_complete_past_sessions!
-      expect(session.reload.status).to eq("completed")
+    context "sessões no limite exato de 1 hora no passado" do
+      let!(:session) do
+        create(:session, user: patient, scheduled_at: 1.hour.ago, status: :scheduled)
+      end
+
+      it "marca como completed" do
+        expect { Session.auto_complete_past_sessions! }
+          .to change { session.reload.status }
+          .from("scheduled").to("completed")
+      end
     end
 
     context "sessões com menos de 1 hora no passado" do
@@ -174,10 +196,10 @@ RSpec.describe Session, type: :model do
         create(:session, user: patient, scheduled_at: 2.hours.ago, status: :completed)
       end
       let!(:absent_past) do
-        create(:session, user: patient, scheduled_at: 2.hours.ago - 1.hour, status: :absent)
+        create(:session, user: patient, scheduled_at: 3.hours.ago, status: :absent)
       end
       let!(:cancelled_past) do
-        create(:session, user: patient, scheduled_at: 2.hours.ago - 2.hours, status: :cancelled)
+        create(:session, user: patient, scheduled_at: 4.hours.ago, status: :cancelled)
       end
 
       it "não altera sessões completed" do
@@ -207,15 +229,20 @@ RSpec.describe Session, type: :model do
       end
     end
 
-    it "completa múltiplas sessões em uma única chamada" do
-      s1 = create(:session, user: patient, scheduled_at: 2.hours.ago, status: :scheduled)
-      patient_b = create(:user, :client, therapist: therapist)
-      s2 = create(:session, user: patient_b, scheduled_at: 4.hours.ago, status: :scheduled)
+    context "múltiplas sessões elegíveis" do
+      let(:patient_b) { create(:user, :client, therapist: therapist) }
+      let!(:s1) { create(:session, user: patient,   scheduled_at: 2.hours.ago, status: :scheduled) }
+      let!(:s2) { create(:session, user: patient_b, scheduled_at: 4.hours.ago, status: :scheduled) }
 
-      Session.auto_complete_past_sessions!
+      before { Session.auto_complete_past_sessions! }
 
-      expect(s1.reload.status).to eq("completed")
-      expect(s2.reload.status).to eq("completed")
+      it "completa a sessão do primeiro paciente" do
+        expect(s1.reload.status).to eq("completed")
+      end
+
+      it "completa a sessão do segundo paciente" do
+        expect(s2.reload.status).to eq("completed")
+      end
     end
   end
 end
