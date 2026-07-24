@@ -35,25 +35,35 @@ class ApplicationController < ActionController::Base
 
   def validate_csrf_token!
     return if safe_request?
-    return unless request.cookies["auth_token"].present?
+    return unless authenticated_request?
 
     provided = request.headers["X-CSRF-Token"]
-    expected = derive_csrf_token_from_cookie
+    expected = derive_csrf_token
 
     return if provided.present? && ActiveSupport::SecurityUtils.secure_compare(provided, expected.to_s)
 
     render json: { error: "Requisição inválida (CSRF)." }, status: :forbidden
   end
 
-  def derive_csrf_token_from_cookie
-    token = request.cookies["auth_token"]
+  # CSRF é exigido sempre que a requisição carrega credencial de autenticação,
+  # seja pelo cookie httpOnly (fluxo browser) ou pelo header Authorization
+  # (fallback usado por clientes não-browser / specs). Fechar o header evita que
+  # qualquer requisição autenticada por Bearer contorne a proteção CSRF.
+  def authenticated_request?
+    auth_token.present?
+  end
+
+  def auth_token
+    request.cookies["auth_token"] ||
+      request.authorization&.split(" ")&.last
+  end
+
+  def derive_csrf_token
+    token = auth_token
     return nil unless token.present?
 
     payload, = JWT.decode(token, nil, false)
-    user_id  = payload["sub"]
-    jti      = payload["jti"]
-
-    hmac_csrf(user_id, jti)
+    hmac_csrf(payload["sub"], payload["jti"])
   rescue JWT::DecodeError
     nil
   end
