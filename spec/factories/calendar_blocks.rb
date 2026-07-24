@@ -1,7 +1,6 @@
-# frozen_string_literal: true
-
 FactoryBot.define do
   factory :calendar_block do
+    association :therapist, factory: %i[user therapist]
     start_time { 1.day.from_now.beginning_of_hour }
     end_time   { 1.day.from_now.beginning_of_hour + 2.hours }
     reason     { "Férias da terapeuta" }

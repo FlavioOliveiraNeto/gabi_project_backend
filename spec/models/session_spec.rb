@@ -1,5 +1,3 @@
-# frozen_string_literal: true
-
 require "rails_helper"
 
 RSpec.describe Session, type: :model do
@@ -7,9 +5,6 @@ RSpec.describe Session, type: :model do
 
   subject(:session) { build(:session) }
 
-  # ---------------------------------------------------------------------------
-  # Validações — campos obrigatórios e lógica temporal
-  # ---------------------------------------------------------------------------
   describe "validações" do
     context "com dados válidos" do
       it "é válida" do
@@ -87,9 +82,6 @@ RSpec.describe Session, type: :model do
     end
   end
 
-  # ---------------------------------------------------------------------------
-  # Conflito de agenda com outras sessões
-  # ---------------------------------------------------------------------------
   describe "conflito de agenda" do
     let(:base)        { 2.weeks.from_now.beginning_of_hour }
     let!(:existente) do
@@ -202,14 +194,14 @@ RSpec.describe Session, type: :model do
     end
   end
 
-  # ---------------------------------------------------------------------------
-  # Conflito com CalendarBlock
-  # ---------------------------------------------------------------------------
   describe "conflito com CalendarBlock" do
-    let(:base) { 3.weeks.from_now.beginning_of_hour }
+    let(:base)      { 3.weeks.from_now.beginning_of_hour }
+    let(:therapist) { create(:user, :therapist) }
+    let(:client)    { create(:user, :client, therapist: therapist) }
 
     let!(:bloco) do
       create(:calendar_block,
+        therapist: therapist,
         start_time: base,
         end_time: base + 4.hours,
         reason: "Consulta médica")
@@ -218,6 +210,7 @@ RSpec.describe Session, type: :model do
     context "when sessão está completamente dentro do bloqueio" do
       let(:sessao) do
         build(:session,
+          user: client,
           start_time: base + 30.minutes,
           end_time: base + 80.minutes)
       end
@@ -231,6 +224,7 @@ RSpec.describe Session, type: :model do
     context "when sessão sobrepõe parcialmente o início do bloqueio" do
       let(:sessao) do
         build(:session,
+          user: client,
           start_time: base - 30.minutes,
           end_time: base + 30.minutes)
       end
@@ -244,6 +238,7 @@ RSpec.describe Session, type: :model do
     context "when sessão sobrepõe parcialmente o fim do bloqueio" do
       let(:sessao) do
         build(:session,
+          user: client,
           start_time: base + 3.hours + 30.minutes,
           end_time: base + 3.hours + 30.minutes + 50.minutes)
       end
@@ -254,9 +249,23 @@ RSpec.describe Session, type: :model do
       end
     end
 
+    context "when o bloqueio pertence a outra terapeuta" do
+      let(:sessao) do
+        build(:session,
+          user: create(:user, :client, therapist: create(:user, :therapist)),
+          start_time: base + 30.minutes,
+          end_time: base + 80.minutes)
+      end
+
+      it "é válida (bloqueio é escopado por terapeuta)" do
+        expect(sessao).to be_valid
+      end
+    end
+
     context "when sessão está fora do bloqueio" do
       let(:sessao) do
         build(:session,
+          user: client,
           start_time: base + 5.hours,
           end_time: base + 5.hours + 50.minutes)
       end
@@ -269,6 +278,7 @@ RSpec.describe Session, type: :model do
     context "when sessão começa exatamente quando o bloqueio termina" do
       let(:sessao) do
         build(:session,
+          user: client,
           start_time: base + 4.hours,
           end_time: base + 4.hours + 50.minutes)
       end
@@ -279,18 +289,12 @@ RSpec.describe Session, type: :model do
     end
   end
 
-  # ---------------------------------------------------------------------------
-  # Associações
-  # ---------------------------------------------------------------------------
   describe "associações" do
     it { is_expected.to belong_to(:user) }
     it { is_expected.to belong_to(:recurring_schedule).optional }
     it { is_expected.to have_one(:clinical_note) }
   end
 
-  # ---------------------------------------------------------------------------
-  # Transições de status
-  # ---------------------------------------------------------------------------
   describe "transições de status" do
     describe "scheduled → cancelled (permitida)" do
       let(:sessao) { create(:session, status: :scheduled) }
@@ -389,9 +393,6 @@ RSpec.describe Session, type: :model do
     end
   end
 
-  # ---------------------------------------------------------------------------
-  # Escopos
-  # ---------------------------------------------------------------------------
   describe "escopos" do
     let(:cliente) { create(:user, :client) }
 
@@ -512,9 +513,6 @@ RSpec.describe Session, type: :model do
     end
   end
 
-  # ---------------------------------------------------------------------------
-  # Métodos de instância
-  # ---------------------------------------------------------------------------
   describe "#duration_in_minutes" do
     let(:sessao) do
       build(:session,
@@ -600,9 +598,6 @@ RSpec.describe Session, type: :model do
     end
   end
 
-  # ---------------------------------------------------------------------------
-  # Audit trail
-  # ---------------------------------------------------------------------------
   describe "audit trail" do
     let(:performing_user) { create(:user, :therapist) }
 

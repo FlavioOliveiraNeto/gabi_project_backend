@@ -1,5 +1,3 @@
-# frozen_string_literal: true
-
 require "rails_helper"
 
 RSpec.describe CalendarBlock, type: :model do
@@ -7,9 +5,6 @@ RSpec.describe CalendarBlock, type: :model do
 
   subject(:block) { build(:calendar_block) }
 
-  # ---------------------------------------------------------------------------
-  # Validações
-  # ---------------------------------------------------------------------------
   describe "validações" do
     context "com dados válidos" do
       it "é válido" do
@@ -63,16 +58,18 @@ RSpec.describe CalendarBlock, type: :model do
     end
 
     describe "sobreposição de bloqueios" do
+      let(:therapist)   { create(:user, :therapist) }
       let(:base)        { 2.days.from_now.beginning_of_hour }
       let!(:existente) do
         create(:calendar_block,
+          therapist: therapist,
           start_time: base,
           end_time: base + 3.hours,
           reason: "Bloco existente")
       end
 
       context "when novo bloco sobrepõe exatamente o existente" do
-        let(:novo) { build(:calendar_block, start_time: base, end_time: base + 3.hours) }
+        let(:novo) { build(:calendar_block, therapist: therapist, start_time: base, end_time: base + 3.hours) }
 
         it "é inválido" do
           expect(novo).to be_invalid
@@ -83,6 +80,7 @@ RSpec.describe CalendarBlock, type: :model do
       context "when novo bloco começa durante o existente" do
         let(:novo) do
           build(:calendar_block,
+            therapist: therapist,
             start_time: base + 1.hour,
             end_time: base + 4.hours)
         end
@@ -96,6 +94,7 @@ RSpec.describe CalendarBlock, type: :model do
       context "when novo bloco termina durante o existente" do
         let(:novo) do
           build(:calendar_block,
+            therapist: therapist,
             start_time: base - 1.hour,
             end_time: base + 1.hour)
         end
@@ -109,6 +108,7 @@ RSpec.describe CalendarBlock, type: :model do
       context "when novo bloco engloba completamente o existente" do
         let(:novo) do
           build(:calendar_block,
+            therapist: therapist,
             start_time: base - 1.hour,
             end_time: base + 4.hours)
         end
@@ -119,9 +119,23 @@ RSpec.describe CalendarBlock, type: :model do
         end
       end
 
+      context "when o bloco sobreposto pertence a outra terapeuta" do
+        let(:novo) do
+          build(:calendar_block,
+            therapist: create(:user, :therapist),
+            start_time: base,
+            end_time: base + 3.hours)
+        end
+
+        it "é válido (sobreposição é escopada por terapeuta)" do
+          expect(novo).to be_valid
+        end
+      end
+
       context "when novo bloco começa exatamente quando o existente termina" do
         let(:novo) do
           build(:calendar_block,
+            therapist: therapist,
             start_time: base + 3.hours,
             end_time: base + 5.hours)
         end
@@ -134,6 +148,7 @@ RSpec.describe CalendarBlock, type: :model do
       context "when novo bloco termina exatamente quando o existente começa" do
         let(:novo) do
           build(:calendar_block,
+            therapist: therapist,
             start_time: base - 2.hours,
             end_time: base)
         end
@@ -146,6 +161,7 @@ RSpec.describe CalendarBlock, type: :model do
       context "when novo bloco está em período sem sobreposição" do
         let(:novo) do
           build(:calendar_block,
+            therapist: therapist,
             start_time: base + 5.hours,
             end_time: base + 7.hours)
         end
@@ -164,9 +180,16 @@ RSpec.describe CalendarBlock, type: :model do
     end
   end
 
-  # ---------------------------------------------------------------------------
-  # Métodos de instância
-  # ---------------------------------------------------------------------------
+  describe "associações" do
+    it { is_expected.to belong_to(:therapist).class_name("User") }
+
+    it "é inválido sem terapeuta dono" do
+      block.therapist = nil
+      expect(block).to be_invalid
+      expect(block.errors[:therapist]).to be_present
+    end
+  end
+
   describe "#duration_in_hours" do
     it "retorna a duração correta em horas inteiras" do
       base = 3.days.from_now.beginning_of_hour
@@ -187,9 +210,6 @@ RSpec.describe CalendarBlock, type: :model do
     end
   end
 
-  # ---------------------------------------------------------------------------
-  # Escopos
-  # ---------------------------------------------------------------------------
   describe "escopos" do
     let!(:futuro)   { create(:calendar_block, :upcoming) }
     let!(:passado)  { create(:calendar_block, :past) }
@@ -230,9 +250,6 @@ RSpec.describe CalendarBlock, type: :model do
     end
   end
 
-  # ---------------------------------------------------------------------------
-  # Audit trail
-  # ---------------------------------------------------------------------------
   describe "audit trail" do
     let(:performing_user) { create(:user, :therapist) }
 

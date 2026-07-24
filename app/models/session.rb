@@ -1,22 +1,14 @@
-# frozen_string_literal: true
-
 class Session < ApplicationRecord
   include Auditable
 
-  # Levantado quando uma transição de status inválida é tentada via métodos
-  # de negócio (cancel!, mark_as_absent!, auto_complete!).
   InvalidTransition = Class.new(StandardError)
 
-  # Transições permitidas via atribuição direta / update normal.
-  # scheduled → completed é bloqueado — só auto_complete! (job) é permitido.
   ALLOWED_DIRECT_TRANSITIONS = {
     "scheduled" => %w[cancelled],
     "completed" => %w[absent],
     "absent"    => [],
     "cancelled" => []
   }.freeze
-
-  # ── Enums ───────────────────────────────────────────────────────────────────
 
   enum :status, {
     scheduled: 0,
@@ -30,13 +22,9 @@ class Session < ApplicationRecord
     extra:     1
   }
 
-  # ── Associações ─────────────────────────────────────────────────────────────
-
   belongs_to :user
   belongs_to :recurring_schedule, optional: true
   has_one    :clinical_note
-
-  # ── Validações ──────────────────────────────────────────────────────────────
 
   validates :user,         presence: true
   validates :start_time,   presence: true
@@ -50,18 +38,12 @@ class Session < ApplicationRecord
   validate :no_calendar_block_conflict
   validate :status_transition_valid
 
-  # ── Escopos ─────────────────────────────────────────────────────────────────
-
   scope :upcoming,  -> { scheduled.where("start_time > ?", Time.current) }
   scope :past,      -> { where("start_time < ?", Time.current) }
   scope :for_user,  ->(user) { where(user: user) }
   scope :in_range,  ->(from, to) { where(start_time: from..to) }
 
-  # ── Callbacks de auditoria ──────────────────────────────────────────────────
-
   after_create { log_audit("create") }
-
-  # ── Métodos de transição ─────────────────────────────────────────────────────
 
   def cancel!
     raise InvalidTransition, "Apenas sessões agendadas podem ser canceladas (status atual: #{status})" unless scheduled?
@@ -77,8 +59,6 @@ class Session < ApplicationRecord
     log_audit("mark_as_absent")
   end
 
-  # Chamado exclusivamente pelo job de auto-completar sessões passadas.
-  # Bypassa a validação de transição que bloqueia scheduled → completed diretamente.
   def auto_complete!
     raise InvalidTransition, "Apenas sessões agendadas podem ser auto-completadas (status atual: #{status})" unless scheduled?
 
@@ -87,8 +67,6 @@ class Session < ApplicationRecord
   ensure
     @bypass_status_validation = false
   end
-
-  # ── Métodos de consulta ──────────────────────────────────────────────────────
 
   def duration_in_minutes
     return 0 unless start_time && end_time
@@ -112,7 +90,6 @@ class Session < ApplicationRecord
     completed?
   end
 
-  # Compatibilidade com o job legado
   def self.auto_complete_past_sessions!
     where(status: :scheduled)
       .where("start_time <= ?", 1.hour.ago)
@@ -120,8 +97,6 @@ class Session < ApplicationRecord
   end
 
   private
-
-  # ── Validações privadas ─────────────────────────────────────────────────────
 
   def end_time_after_start_time
     return unless start_time.present? && end_time.present?
@@ -155,9 +130,10 @@ class Session < ApplicationRecord
 
   def no_calendar_block_conflict
     return unless start_time.present? && end_time.present?
-    return unless defined?(CalendarBlock)
+    return unless user&.therapist_id.present?
 
     conflict = CalendarBlock
+      .where(therapist_id: user.therapist_id)
       .where("start_time < ? AND end_time > ?", end_time, start_time)
       .exists?
 

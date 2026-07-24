@@ -31,6 +31,10 @@ class User < ApplicationRecord
   has_many :clinical_notes,      dependent: :destroy
   has_many :audit_logs,          dependent: :destroy
 
+  has_many :calendar_blocks,
+           foreign_key: "therapist_id",
+           dependent:   :destroy
+
   # Legado (mantido enquanto controllers antigos usam esses models)
   has_many :patient_notes,   dependent: :destroy
   has_many :weekly_schedules, dependent: :destroy
