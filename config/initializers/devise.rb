@@ -22,10 +22,11 @@ Devise.setup do |config|
   config.responder.error_status = :unprocessable_content
   config.responder.redirect_status = :see_other
 
-  jwt_secret = Rails.application.credentials.devise_jwt_secret_key
+  jwt_secret = ENV["DEVISE_JWT_SECRET_KEY"].presence ||
+               Rails.application.credentials.devise_jwt_secret_key.presence
 
   if jwt_secret.blank?
-    raise "[Devise JWT] devise_jwt_secret_key não configurado nas credentials de produção!" if Rails.env.production?
+    raise "[Devise JWT] devise_jwt_secret_key não configurado!" if Rails.env.production?
 
     jwt_secret = Rails.application.secret_key_base
   end

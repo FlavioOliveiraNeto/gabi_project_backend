@@ -32,12 +32,15 @@ RUN bundle install && \
 
 COPY . .
 
-RUN sed -i 's/\r$//' bin/rails bin/docker-entrypoint bin/thrust \
+RUN sed -i 's/\r$//' bin/rails bin/docker-entrypoint bin/thrust bin/jobs \
  && chmod +x bin/rails bin/docker-entrypoint bin/thrust
 
 RUN bundle exec bootsnap precompile -j 1 app/ lib/
 
-RUN SECRET_KEY_BASE_DUMMY=1 bin/rails assets:precompile
+RUN SECRET_KEY_BASE_DUMMY=1 \
+    DEVISE_JWT_SECRET_KEY=dummy \
+    DATABASE_URL=postgresql://dummy:dummy@localhost:5432/dummy \
+    bin/rails assets:precompile
 
 FROM base
 
