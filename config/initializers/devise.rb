@@ -1,12 +1,12 @@
 Devise.setup do |config|
-  require 'devise/orm/active_record'
+  require "devise/orm/active_record"
 
-  config.mailer_sender = 'no-reply@seudominio.com'
+  config.mailer_sender = ENV.fetch("MAIL_FROM", "no-reply@gabi.local")
 
-  config.case_insensitive_keys = [:email]
-  config.strip_whitespace_keys = [:email]
+  config.case_insensitive_keys = [ :email ]
+  config.strip_whitespace_keys = [ :email ]
 
-  config.skip_session_storage = [:http_auth]
+  config.skip_session_storage = [ :http_auth ]
 
   config.stretches = Rails.env.test? ? 1 : 12
 
@@ -22,7 +22,6 @@ Devise.setup do |config|
   config.responder.error_status = :unprocessable_content
   config.responder.redirect_status = :see_other
 
-  # JWT secret: obrigatório em produção. Em dev/test usa secret_key_base como fallback seguro.
   jwt_secret = Rails.application.credentials.devise_jwt_secret_key
 
   if jwt_secret.blank?
@@ -35,11 +34,11 @@ Devise.setup do |config|
     jwt.secret = jwt_secret
 
     jwt.dispatch_requests = [
-      ['POST', %r{^/users/sign_in$}]
+      [ "POST", %r{^/users/sign_in$} ]
     ]
 
     jwt.revocation_requests = [
-      ['DELETE', %r{^/users/sign_out$}]
+      [ "DELETE", %r{^/users/sign_out$} ]
     ]
 
     jwt.expiration_time = 30.minutes.to_i
