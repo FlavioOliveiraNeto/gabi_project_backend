@@ -50,3 +50,6 @@ CLAUDE.md
 # Cassettes VCR — descomente se quiser ignorar no controle de versão
 # (recomendado para cassettes com dados sensíveis ou muito volumosos)
 # /spec/cassettes/
+
+# TokenSave MCP local cache (DB + config, não versionar)
+.tokensave/
