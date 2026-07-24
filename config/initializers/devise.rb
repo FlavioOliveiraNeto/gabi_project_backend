@@ -22,17 +22,10 @@ Devise.setup do |config|
   config.responder.error_status = :unprocessable_content
   config.responder.redirect_status = :see_other
 
-  # JWT secret: obrigatório em produção. Em dev/test usa secret_key_base como fallback seguro.
-  jwt_secret = Rails.application.credentials.devise_jwt_secret_key
-
-  if jwt_secret.blank?
-    raise "[Devise JWT] devise_jwt_secret_key não configurado nas credentials de produção!" if Rails.env.production?
-
-    jwt_secret = Rails.application.secret_key_base
-  end
-
   config.jwt do |jwt|
-    jwt.secret = jwt_secret
+    jwt.secret = ENV.fetch("DEVISE_JWT_SECRET_KEY") {
+      raise "[Devise JWT] DEVISE_JWT_SECRET_KEY não configurado!"
+    }
 
     jwt.dispatch_requests = [
       ['POST', %r{^/users/sign_in$}]
