@@ -58,6 +58,7 @@ class Clients::DashboardController < ApplicationController
   def build_notes
     current_user.patient_notes
                 .order(created_at: :desc)
+                .limit(100)
                 .map do |note|
       {
         id: note.id,

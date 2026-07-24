@@ -44,10 +44,7 @@ class Therapists::DashboardController < ApplicationController
   end
 
   def build_patients(patients)
-    patients
-      .includes(:weekly_schedules, :sessions, :clinical_notes)
-      .map do |p|
-
+    patients.includes(:weekly_schedules, :sessions, :clinical_notes).map do |p|
       all_schedules    = p.weekly_schedules.to_a
       active_schedules = all_schedules.select(&:active?)
 
