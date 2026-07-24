@@ -1,16 +1,10 @@
-# frozen_string_literal: true
-
 class RecurringSchedule < ApplicationRecord
   include Auditable
 
   WEEKDAY_NAMES = %w[domingo segunda-feira terça-feira quarta-feira quinta-feira sexta-feira sábado].freeze
 
-  # ── Associações ─────────────────────────────────────────────────────────────
-
   belongs_to :user
   has_many   :sessions, dependent: :nullify
-
-  # ── Validações ──────────────────────────────────────────────────────────────
 
   validates :user,             presence: true
   validates :weekday,          presence: true, inclusion: { in: 0..6 }
@@ -22,16 +16,10 @@ class RecurringSchedule < ApplicationRecord
             format: { with: /\Ahttps?:\/\//i, message: "deve ser uma URL válida (http/https)" },
             allow_blank: true
 
-  # ── Escopos ─────────────────────────────────────────────────────────────────
-
   scope :active, -> { where(active: true) }
-
-  # ── Callbacks ───────────────────────────────────────────────────────────────
 
   before_update :purge_future_sessions_if_schedule_changed
   after_update  { log_audit("update") }
-
-  # ── Métodos de instância ────────────────────────────────────────────────────
 
   def end_time
     return nil unless start_time

@@ -1,13 +1,8 @@
-# frozen_string_literal: true
-
 require "rails_helper"
 
 RSpec.describe ClinicalNote, type: :model do
   subject(:note) { build(:clinical_note) }
 
-  # ---------------------------------------------------------------------------
-  # Validações
-  # ---------------------------------------------------------------------------
   describe "validações" do
     context "com dados válidos" do
       it "é válida" do
@@ -87,17 +82,11 @@ RSpec.describe ClinicalNote, type: :model do
     end
   end
 
-  # ---------------------------------------------------------------------------
-  # Associações
-  # ---------------------------------------------------------------------------
   describe "associações" do
     it { is_expected.to belong_to(:user) }
     it { is_expected.to belong_to(:session) }
   end
 
-  # ---------------------------------------------------------------------------
-  # Criptografia do conteúdo
-  # ---------------------------------------------------------------------------
   describe "criptografia do conteúdo" do
     let(:conteudo_original) { "Paciente apresentou melhora significativa no manejo da ansiedade." }
     let(:nota) { create(:clinical_note, content: conteudo_original) }

@@ -1,5 +1,3 @@
-# frozen_string_literal: true
-
 FactoryBot.define do
   factory :recurring_schedule do
     association :user, factory: %i[user client]

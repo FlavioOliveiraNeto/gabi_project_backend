@@ -1,5 +1,3 @@
-# frozen_string_literal: true
-
 require "rails_helper"
 
 RSpec.describe RecurringSchedule, type: :model do
@@ -7,9 +5,6 @@ RSpec.describe RecurringSchedule, type: :model do
 
   subject(:schedule) { build(:recurring_schedule) }
 
-  # ---------------------------------------------------------------------------
-  # Validações
-  # ---------------------------------------------------------------------------
   describe "validações" do
     context "com dados válidos" do
       it "é válido" do
@@ -122,17 +117,11 @@ RSpec.describe RecurringSchedule, type: :model do
     end
   end
 
-  # ---------------------------------------------------------------------------
-  # Associações
-  # ---------------------------------------------------------------------------
   describe "associações" do
     it { is_expected.to belong_to(:user) }
     it { is_expected.to have_many(:sessions) }
   end
 
-  # ---------------------------------------------------------------------------
-  # Escopos
-  # ---------------------------------------------------------------------------
   describe "escopos" do
     let!(:ativo)   { create(:recurring_schedule, active: true) }
     let!(:inativo) { create(:recurring_schedule, :inactive) }
@@ -145,9 +134,6 @@ RSpec.describe RecurringSchedule, type: :model do
     end
   end
 
-  # ---------------------------------------------------------------------------
-  # Métodos de instância
-  # ---------------------------------------------------------------------------
   describe "#end_time" do
     let(:schedule) { build(:recurring_schedule, start_time: "14:00:00", duration_minutes: 50) }
 
@@ -185,9 +171,6 @@ RSpec.describe RecurringSchedule, type: :model do
     end
   end
 
-  # ---------------------------------------------------------------------------
-  # Callbacks — alterações que afetam sessões futuras
-  # ---------------------------------------------------------------------------
   describe "callbacks ao alterar agenda" do
     let(:cliente)  { create(:user, :client) }
     let(:schedule) { create(:recurring_schedule, user: cliente) }
@@ -261,9 +244,6 @@ RSpec.describe RecurringSchedule, type: :model do
     end
   end
 
-  # ---------------------------------------------------------------------------
-  # Audit trail
-  # ---------------------------------------------------------------------------
   describe "audit trail" do
     let(:performing_user) { create(:user, :therapist) }
 

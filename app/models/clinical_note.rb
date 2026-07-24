@@ -1,19 +1,10 @@
-# frozen_string_literal: true
-
 class ClinicalNote < ApplicationRecord
-  # ── Associações ─────────────────────────────────────────────────────────────
-
   belongs_to :user
   belongs_to :session
 
-  # Mantido para dados legados (pode ser nil em registros novos)
   belongs_to :therapist, class_name: "User", optional: true
 
-  # ── Criptografia ─────────────────────────────────────────────────────────────
-
   encrypts :content
-
-  # ── Validações ──────────────────────────────────────────────────────────────
 
   validates :user,    presence: true
   validates :session, presence: true

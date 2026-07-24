@@ -1,13 +1,8 @@
-# frozen_string_literal: true
-
 require "rails_helper"
 
 RSpec.describe AuditLog, type: :model do
   subject(:log) { build(:audit_log) }
 
-  # ---------------------------------------------------------------------------
-  # Validações
-  # ---------------------------------------------------------------------------
   describe "validações" do
     context "com dados válidos" do
       it "é válido" do
@@ -48,16 +43,10 @@ RSpec.describe AuditLog, type: :model do
     end
   end
 
-  # ---------------------------------------------------------------------------
-  # Associações
-  # ---------------------------------------------------------------------------
   describe "associações" do
     it { is_expected.to belong_to(:user) }
   end
 
-  # ---------------------------------------------------------------------------
-  # Imutabilidade (crítico)
-  # ---------------------------------------------------------------------------
   describe "imutabilidade" do
     let(:log_criado) { create(:audit_log) }
 
@@ -86,9 +75,6 @@ RSpec.describe AuditLog, type: :model do
     end
   end
 
-  # ---------------------------------------------------------------------------
-  # Escopos
-  # ---------------------------------------------------------------------------
   describe "escopos" do
     let(:user1) { create(:user) }
     let(:user2) { create(:user) }
@@ -132,9 +118,6 @@ RSpec.describe AuditLog, type: :model do
     end
   end
 
-  # ---------------------------------------------------------------------------
-  # metadata
-  # ---------------------------------------------------------------------------
   describe "metadata (jsonb)" do
     it "armazena metadata como hash" do
       log = create(:audit_log, metadata: { ip: "127.0.0.1", user_agent: "RSpec" })

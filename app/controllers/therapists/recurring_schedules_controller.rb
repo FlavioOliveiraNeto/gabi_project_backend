@@ -1,22 +1,17 @@
-# frozen_string_literal: true
-
 class Therapists::RecurringSchedulesController < ApplicationController
   before_action :authenticate_user!
   before_action :ensure_therapist!
   before_action :set_client
   before_action :set_schedule, only: %i[show update destroy]
 
-  # GET /therapists/clients/:client_id/recurring_schedules
   def index
     render json: @client.recurring_schedules.active, status: :ok
   end
 
-  # GET /therapists/clients/:client_id/recurring_schedules/:id
   def show
     render json: @schedule, status: :ok
   end
 
-  # POST /therapists/clients/:client_id/recurring_schedules
   def create
     schedule = @client.recurring_schedules.build(schedule_params)
 
@@ -27,7 +22,6 @@ class Therapists::RecurringSchedulesController < ApplicationController
     end
   end
 
-  # PATCH/PUT /therapists/clients/:client_id/recurring_schedules/:id
   def update
     if @schedule.update(schedule_params)
       render json: @schedule, status: :ok
@@ -36,7 +30,6 @@ class Therapists::RecurringSchedulesController < ApplicationController
     end
   end
 
-  # DELETE /therapists/clients/:client_id/recurring_schedules/:id
   def destroy
     @schedule.update!(active: false)
     head :no_content
