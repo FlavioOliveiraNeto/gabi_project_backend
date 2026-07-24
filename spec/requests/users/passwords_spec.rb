@@ -5,10 +5,9 @@ RSpec.describe "Users::Passwords (Troca de Senha)", type: :request do
   let(:user)         { create(:user, :client, therapist: therapist, password: "Password@123") }
   let(:auth_headers) { auth_headers_for(user) }
 
-  # PUT /users/change_password - Users::PasswordsController#update
   describe "PUT /users/change_password" do
     let(:valid_params) do
-      { password: "NovaSenha@456", password_confirmation: "NovaSenha@456" }
+      { current_password: "Password@123", password: "NovaSenha@456", password_confirmation: "NovaSenha@456" }
     end
 
     context "sem autenticação" do
@@ -37,7 +36,6 @@ RSpec.describe "Users::Passwords (Troca de Senha)", type: :request do
       end
 
       it "limpa a flag must_change_password" do
-        # O controller chama clear_must_change_password! incondicionalmente.
         expect(user.reload.must_change_password).to be false
       end
 
@@ -50,22 +48,45 @@ RSpec.describe "Users::Passwords (Troca de Senha)", type: :request do
       end
 
       it "token antigo retorna 401 em requisições subsequentes" do
-        # Cookie persiste no jar da sessão de teste mas o JTI foi adicionado à denylist.
         get clients_dashboard_path
         expect(response).to have_http_status(:unauthorized)
       end
     end
 
-    context "com must_change_password ativo" do
+    context "com must_change_password ativo (primeiro login forçado)" do
       before { user.update!(must_change_password: true) }
 
-      it "limpa a flag após troca bem-sucedida" do
+      it "permite a troca SEM current_password e limpa a flag" do
         put users_change_password_path,
-            params: valid_params,
+            params: { password: "NovaSenha@456", password_confirmation: "NovaSenha@456" },
             headers: auth_headers,
             as: :json
 
+        expect(response).to have_http_status(:ok)
         expect(user.reload.must_change_password).to be false
+      end
+    end
+
+    context "troca normal (must_change_password falso)" do
+      it "retorna 422 quando current_password está ausente" do
+        put users_change_password_path,
+            params: { password: "NovaSenha@456", password_confirmation: "NovaSenha@456" },
+            headers: auth_headers,
+            as: :json
+
+        expect(response).to have_http_status(:unprocessable_content)
+        expect(json_body["error"]).to match(/Senha atual é obrigatória/)
+      end
+
+      it "retorna 422 quando current_password está incorreta" do
+        put users_change_password_path,
+            params: valid_params.merge(current_password: "SenhaErrada@000"),
+            headers: auth_headers,
+            as: :json
+
+        expect(response).to have_http_status(:unprocessable_content)
+        expect(json_body["error"]).to match(/Senha atual incorreta/)
+        expect(user.reload.valid_password?("Password@123")).to be true
       end
     end
 
@@ -75,7 +96,7 @@ RSpec.describe "Users::Passwords (Troca de Senha)", type: :request do
 
       it "retorna 200 (qualquer role autenticada pode trocar a própria senha)" do
         put users_change_password_path,
-            params: valid_params,
+            params: valid_params.merge(current_password: "Senha@123!"),
             headers: therapist_headers,
             as: :json
 
@@ -85,7 +106,7 @@ RSpec.describe "Users::Passwords (Troca de Senha)", type: :request do
 
     context "com senhas que não coincidem" do
       let(:mismatched_params) do
-        { password: "NovaSenha@456", password_confirmation: "Diferente@999" }
+        { current_password: "Password@123", password: "NovaSenha@456", password_confirmation: "Diferente@999" }
       end
 
       before do
@@ -116,7 +137,7 @@ RSpec.describe "Users::Passwords (Troca de Senha)", type: :request do
     context "com password em branco" do
       it "retorna 422 com mensagem de obrigatoriedade" do
         put users_change_password_path,
-            params: { password: "", password_confirmation: "" },
+            params: { current_password: "Password@123", password: "", password_confirmation: "" },
             headers: auth_headers,
             as: :json
 
@@ -128,7 +149,7 @@ RSpec.describe "Users::Passwords (Troca de Senha)", type: :request do
     context "com password muito curta (< 6 caracteres - validação do modelo)" do
       it "retorna 422" do
         put users_change_password_path,
-            params: { password: "abc", password_confirmation: "abc" },
+            params: { current_password: "Password@123", password: "abc", password_confirmation: "abc" },
             headers: auth_headers,
             as: :json
 
@@ -137,8 +158,6 @@ RSpec.describe "Users::Passwords (Troca de Senha)", type: :request do
     end
 
     context "com cookie válido mas sem X-CSRF-Token" do
-      # auth_headers_for faz login e persiste o cookie no jar da sessão de teste.
-      # O retorno (CSRF header) é intencionalmente descartado para simular CSRF ausente.
       before { auth_headers_for(user) }
 
       it "retorna 403 (CSRF bloqueado)" do
@@ -165,7 +184,6 @@ RSpec.describe "Users::Passwords (Troca de Senha)", type: :request do
     end
   end
 
-  # POST /users/password - DevisePasswordsController#create (solicitar reset)
   describe "POST /users/password (solicitar reset por e-mail)" do
     let!(:target_user) { create(:user, :client, email: "reset@example.com", therapist: therapist) }
 
@@ -213,7 +231,6 @@ RSpec.describe "Users::Passwords (Troca de Senha)", type: :request do
     end
   end
 
-  # PUT /users/password - DevisePasswordsController#update (confirmar reset)
   describe "PUT /users/password (confirmar reset por token)" do
     let!(:target_user) { create(:user, :client, email: "reset@example.com", therapist: therapist) }
 

@@ -4,7 +4,6 @@ RSpec.describe "CSRF Protection", type: :request do
   let(:therapist) { create(:user, :therapist) }
   let(:client)    { create(:user, :client, therapist: therapist) }
 
-  # Métodos seguros (GET / HEAD) - never blocked by CSRF
   describe "métodos seguros (GET / HEAD) ignoram validação CSRF" do
     context "com cookie de sessão ativo mas sem X-CSRF-Token" do
       before { auth_headers_for(client) }
@@ -37,7 +36,6 @@ RSpec.describe "CSRF Protection", type: :request do
     end
   end
 
-  # DELETE com cookie de sessão
   describe "DELETE com cookie de sessão" do
     let(:auth_headers) { auth_headers_for(client) }
 
@@ -75,7 +73,6 @@ RSpec.describe "CSRF Protection", type: :request do
     end
   end
 
-  # PUT com cookie de sessão
   describe "PUT com cookie de sessão" do
     let(:auth_headers) { auth_headers_for(client) }
 
@@ -93,7 +90,11 @@ RSpec.describe "CSRF Protection", type: :request do
     context "com X-CSRF-Token correto" do
       it "não retorna 403 (chega ao endpoint e processa a lógica)" do
         put users_change_password_path,
-            params: { password: "NovaSenha@456", password_confirmation: "NovaSenha@456" },
+            params: {
+              current_password: client.password,
+              password: "NovaSenha@456",
+              password_confirmation: "NovaSenha@456"
+            },
             headers: auth_headers,
             as: :json
         expect(response).not_to have_http_status(:forbidden)
@@ -102,7 +103,6 @@ RSpec.describe "CSRF Protection", type: :request do
     end
   end
 
-  # PATCH com cookie de sessão
   describe "PATCH com cookie de sessão" do
     let(:patient_note) { create(:patient_note, user: client) }
     let(:auth_headers) { auth_headers_for(client) }
@@ -119,7 +119,6 @@ RSpec.describe "CSRF Protection", type: :request do
     end
   end
 
-  # POST com cookie de sessão
   describe "POST com cookie de sessão" do
     let(:auth_headers) { auth_headers_for(client) }
 
@@ -141,12 +140,11 @@ RSpec.describe "CSRF Protection", type: :request do
              headers: auth_headers,
              as: :json
         expect(response).not_to have_http_status(:forbidden)
-        expect([201, 422]).to include(response.status)
+        expect([ 201, 422 ]).to include(response.status)
       end
     end
   end
 
-  # Sem cookie - CSRF ignorado, autenticação falha (401)
   describe "requisições sem cookie ignoram validação CSRF" do
     it "DELETE sem cookie retorna 401, não 403" do
       delete destroy_user_session_path, as: :json
@@ -171,7 +169,6 @@ RSpec.describe "CSRF Protection", type: :request do
     end
   end
 
-  # Cookie com JWT malformado - derive retorna nil → 403
   describe "cookie com JWT malformado" do
     it "DELETE retorna 403 quando auth_token não é um JWT válido" do
       cookies["auth_token"] = "isso.nao.e.um.jwt"
@@ -194,7 +191,6 @@ RSpec.describe "CSRF Protection", type: :request do
     end
   end
 
-  # Rotação de token - token da sessão anterior rejeitado após logout
   describe "CSRF token da sessão anterior não funciona após logout" do
     it "CSRF token antigo é rejeitado em nova sessão após logout" do
       first_headers = auth_headers_for(client)
@@ -211,7 +207,6 @@ RSpec.describe "CSRF Protection", type: :request do
     end
   end
 
-  # Comparação segura - ActiveSupport::SecurityUtils.secure_compare
   describe "comparação segura de CSRF token" do
     it "rejeita token com comprimento correto mas valor errado" do
       auth_headers_for(client)

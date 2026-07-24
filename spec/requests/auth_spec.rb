@@ -4,7 +4,6 @@ RSpec.describe "GET /auth/me", type: :request do
   let(:therapist) { create(:user, :therapist) }
   let(:client)    { create(:user, :client, therapist: therapist) }
 
-  # Fluxo feliz - cliente
   context "autenticado como cliente" do
     before do
       auth_headers_for(client)
@@ -44,7 +43,6 @@ RSpec.describe "GET /auth/me", type: :request do
     end
   end
 
-  # Fluxo feliz - terapeuta
   context "autenticado como terapeuta" do
     before do
       auth_headers_for(therapist)
@@ -76,7 +74,6 @@ RSpec.describe "GET /auth/me", type: :request do
     end
   end
 
-  # must_change_password
   context "quando must_change_password: true" do
     let(:client) { create(:user, :client, :must_change_password, therapist: therapist) }
 
@@ -94,7 +91,6 @@ RSpec.describe "GET /auth/me", type: :request do
     end
   end
 
-  # Determinismo do csrf_token por JTI
   context "determinismo do csrf_token por JTI" do
     before do
       post user_session_path,
@@ -123,7 +119,6 @@ RSpec.describe "GET /auth/me", type: :request do
     end
   end
 
-  # Sem autenticação
   context "sem autenticação (sem cookie)" do
     it "retorna 401" do
       get auth_me_path
@@ -141,7 +136,6 @@ RSpec.describe "GET /auth/me", type: :request do
     end
   end
 
-  # JWT inválido
   context "com JWT inválido no cookie" do
     it "retorna 401 com assinatura forjada" do
       cookies["auth_token"] = "header.payload.invalidsignature"
@@ -156,7 +150,6 @@ RSpec.describe "GET /auth/me", type: :request do
     end
   end
 
-  # JWT revogado
   context "com JWT revogado" do
     it "retorna 401 após logout" do
       headers = auth_headers_for(client)
@@ -169,7 +162,11 @@ RSpec.describe "GET /auth/me", type: :request do
     it "retorna 401 após troca de senha" do
       headers = auth_headers_for(client)
       put users_change_password_path,
-          params: { password: "NovaSenha@456", password_confirmation: "NovaSenha@456" },
+          params: {
+            current_password: client.password,
+            password: "NovaSenha@456",
+            password_confirmation: "NovaSenha@456"
+          },
           headers: headers,
           as: :json
 
@@ -178,7 +175,6 @@ RSpec.describe "GET /auth/me", type: :request do
     end
   end
 
-  # Isolamento de dados
   context "isolamento de dados" do
     it "retorna os dados do usuário autenticado, nunca de outro" do
       other_client = create(:user, :client, therapist: therapist)

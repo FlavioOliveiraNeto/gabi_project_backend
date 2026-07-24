@@ -2,8 +2,21 @@ class Users::PasswordsController < ApplicationController
   before_action :authenticate_user!
 
   def update
-    password              = params[:password]
+    current_password = params[:current_password]
+    password = params[:password]
     password_confirmation = params[:password_confirmation]
+
+    unless current_user.must_change_password?
+      if current_password.blank?
+        render json: { error: "Senha atual é obrigatória." }, status: :unprocessable_entity
+        return
+      end
+
+      unless current_user.valid_password?(current_password)
+        render json: { error: "Senha atual incorreta." }, status: :unprocessable_entity
+        return
+      end
+    end
 
     if password.blank? || password_confirmation.blank?
       render json: { error: "Senha e confirmação são obrigatórias." }, status: :unprocessable_entity
@@ -33,7 +46,7 @@ class Users::PasswordsController < ApplicationController
     return unless token.present?
 
     secret  = Rails.application.credentials.devise_jwt_secret_key || Rails.application.secret_key_base
-    payload, = JWT.decode(token, secret, true, algorithms: ["HS256"])
+    payload, = JWT.decode(token, secret, true, algorithms: [ "HS256" ])
     return unless payload["jti"].present?
 
     JwtDenylist.revoke_jwt(payload, current_user)
