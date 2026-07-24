@@ -1,13 +1,8 @@
-# frozen_string_literal: true
-
 require "rails_helper"
 
 RSpec.describe User, type: :model do
   subject(:user) { build(:user) }
 
-  # ---------------------------------------------------------------------------
-  # Validações
-  # ---------------------------------------------------------------------------
   describe "validações" do
     context "com dados válidos" do
       it "é válido" do
@@ -115,20 +110,55 @@ RSpec.describe User, type: :model do
         expect { user.role = :admin }.to raise_error(ArgumentError)
       end
     end
+
+    describe "google_meet_link" do
+      it "é válido em branco (opcional)" do
+        user.google_meet_link = ""
+        expect(user).to be_valid
+      end
+
+      it "é válido com URL HTTPS do Google Meet" do
+        user.google_meet_link = "https://meet.google.com/abc-defg-hij"
+        expect(user).to be_valid
+      end
+
+      it "aceita host em maiúsculas (case-insensitive)" do
+        user.google_meet_link = "https://MEET.GOOGLE.COM/abc-defg-hij"
+        expect(user).to be_valid
+      end
+
+      it "é inválido com http:// (não-HTTPS)" do
+        user.google_meet_link = "http://meet.google.com/abc-defg-hij"
+        expect(user).to be_invalid
+        expect(user.errors[:google_meet_link]).to be_present
+      end
+
+      it "é inválido com host arbitrário (open redirect / phishing)" do
+        user.google_meet_link = "https://evil.example.com/phish"
+        expect(user).to be_invalid
+        expect(user.errors[:google_meet_link]).to be_present
+      end
+
+      it "é inválido com subdomínio forjado (meet.google.com.evil.com)" do
+        user.google_meet_link = "https://meet.google.com.evil.com/x"
+        expect(user).to be_invalid
+        expect(user.errors[:google_meet_link]).to be_present
+      end
+
+      it "é inválido com string que não é URL" do
+        user.google_meet_link = "not a url at all"
+        expect(user).to be_invalid
+        expect(user.errors[:google_meet_link]).to be_present
+      end
+    end
   end
 
-  # ---------------------------------------------------------------------------
-  # Associações
-  # ---------------------------------------------------------------------------
   describe "associações" do
     it { is_expected.to have_many(:audit_logs) }
     it { is_expected.to have_many(:sessions) }
     it { is_expected.to have_many(:recurring_schedules) }
   end
 
-  # ---------------------------------------------------------------------------
-  # Métodos de instância
-  # ---------------------------------------------------------------------------
   describe "#therapist?" do
     context "when role é therapist" do
       let(:user) { build(:user, :therapist) }
@@ -183,9 +213,6 @@ RSpec.describe User, type: :model do
     end
   end
 
-  # ---------------------------------------------------------------------------
-  # Segurança — armazenamento da senha
-  # ---------------------------------------------------------------------------
   describe "segurança da senha" do
     let(:user) { create(:user, password: "Senha@123!") }
 
@@ -203,9 +230,6 @@ RSpec.describe User, type: :model do
     end
   end
 
-  # ---------------------------------------------------------------------------
-  # Normalização do email
-  # ---------------------------------------------------------------------------
   describe "normalização do email" do
     it "converte email para downcase antes de salvar" do
       user = create(:user, email: "GABRIELLA@CLINICA.COM.BR")
@@ -218,9 +242,6 @@ RSpec.describe User, type: :model do
     end
   end
 
-  # ---------------------------------------------------------------------------
-  # Valores padrão
-  # ---------------------------------------------------------------------------
   describe "valores padrão" do
     let(:novo_usuario) { described_class.new }
 
@@ -233,9 +254,6 @@ RSpec.describe User, type: :model do
     end
   end
 
-  # ---------------------------------------------------------------------------
-  # Senha temporária — cadastro pela terapeuta
-  # ---------------------------------------------------------------------------
   describe "senha temporária (criado pela terapeuta)" do
     context "when criado sem must_change_password explícito" do
       it "must_change_password é false por padrão" do
@@ -257,9 +275,6 @@ RSpec.describe User, type: :model do
     end
   end
 
-  # ---------------------------------------------------------------------------
-  # Escopos de clientes
-  # ---------------------------------------------------------------------------
   describe "escopos" do
     let!(:cliente_ativo)    { create(:user, :client, active: true) }
     let!(:cliente_inativo)  { create(:user, :client, active: false) }
@@ -287,9 +302,6 @@ RSpec.describe User, type: :model do
     end
   end
 
-  # ---------------------------------------------------------------------------
-  # Comportamento ao desativar cliente
-  # ---------------------------------------------------------------------------
   describe "desativação de cliente" do
     include_context "with São Paulo timezone"
 
@@ -331,9 +343,6 @@ RSpec.describe User, type: :model do
     end
   end
 
-  # ---------------------------------------------------------------------------
-  # Audit trail
-  # ---------------------------------------------------------------------------
   describe "audit trail" do
     include_context "with São Paulo timezone"
 

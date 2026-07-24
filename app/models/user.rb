@@ -1,5 +1,3 @@
-# frozen_string_literal: true
-
 class User < ApplicationRecord
   include Auditable
 
@@ -13,9 +11,7 @@ class User < ApplicationRecord
          :jwt_authenticatable,
          jwt_revocation_strategy: JwtDenylist
 
-  # ── Associações ─────────────────────────────────────────────────────────────
-
-  # Legado: terapeuta → seus clientes (mantido para os controllers existentes)
+  # Legado: terapeuta -> seus clientes (mantido para os controllers existentes)
   has_many :patients,
            class_name:  "User",
            foreign_key: "therapist_id",
@@ -25,7 +21,7 @@ class User < ApplicationRecord
              class_name: "User",
              optional:   true
 
-  # Novo design
+  # design novo
   has_many :sessions,            dependent: :destroy
   has_many :recurring_schedules, dependent: :destroy
   has_many :clinical_notes,      dependent: :destroy
@@ -39,16 +35,12 @@ class User < ApplicationRecord
   has_many :patient_notes,   dependent: :destroy
   has_many :weekly_schedules, dependent: :destroy
 
-  # ── Validações ──────────────────────────────────────────────────────────────
-
-  # Devise::Validatable já valida email (presença, unicidade, formato) e password.
-  # Adicionamos apenas validações extras.
   validates :name, presence: true
   validates :role, presence: true
 
-  validates :google_meet_link,
-            format: { with: /\Ahttps?:\/\//i, message: "deve começar com http:// ou https://" },
-            allow_blank: true
+  ALLOWED_MEET_HOSTS = %w[meet.google.com].freeze
+
+  validate :google_meet_link_is_safe_https_url, if: -> { google_meet_link.present? }
 
   # ── Escopos ─────────────────────────────────────────────────────────────────
 
@@ -69,6 +61,16 @@ class User < ApplicationRecord
   end
 
   private
+
+  def google_meet_link_is_safe_https_url
+    uri = URI.parse(google_meet_link)
+
+    unless uri.is_a?(URI::HTTPS) && ALLOWED_MEET_HOSTS.include?(uri.host&.downcase)
+      errors.add(:google_meet_link, "deve ser uma URL HTTPS de #{ALLOWED_MEET_HOSTS.join(', ')}")
+    end
+  rescue URI::InvalidURIError
+    errors.add(:google_meet_link, "não é uma URL válida")
+  end
 
   def cancel_future_sessions_if_deactivated
     return unless saved_change_to_active? && !active?
