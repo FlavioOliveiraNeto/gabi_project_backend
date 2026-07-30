@@ -9,7 +9,8 @@
 # migrations use external dependencies or application code.
 #
 # It's strongly recommended that you check this file into your version control system.
-ActiveRecord::Schema[8.1].define(version: 2026_03_13_000011) do
+
+ActiveRecord::Schema[8.1].define(version: 2026_07_29_000005) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -20,9 +21,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_13_000011) do
     t.string "entity_type", null: false
     t.jsonb "metadata", default: {}
     t.bigint "user_id", null: false
-    t.index [ "created_at" ], name: "index_audit_logs_on_created_at"
-    t.index [ "entity_type", "entity_id" ], name: "index_audit_logs_on_entity_type_and_entity_id"
-    t.index [ "user_id" ], name: "index_audit_logs_on_user_id"
+    t.index ["created_at"], name: "index_audit_logs_on_created_at"
+    t.index ["entity_type", "entity_id"], name: "index_audit_logs_on_entity_type_and_entity_id"
+    t.index ["user_id"], name: "index_audit_logs_on_user_id"
   end
 
   create_table "calendar_blocks", force: :cascade do |t|
@@ -32,8 +33,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_13_000011) do
     t.datetime "start_time", null: false
     t.bigint "therapist_id", null: false
     t.datetime "updated_at", null: false
-    t.index [ "start_time" ], name: "index_calendar_blocks_on_start_time"
-    t.index [ "therapist_id" ], name: "index_calendar_blocks_on_therapist_id"
+    t.index ["start_time"], name: "index_calendar_blocks_on_start_time"
+    t.index ["therapist_id"], name: "index_calendar_blocks_on_therapist_id"
   end
 
   create_table "clinical_notes", force: :cascade do |t|
@@ -44,17 +45,17 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_13_000011) do
     t.bigint "therapist_id"
     t.datetime "updated_at", null: false
     t.bigint "user_id", null: false
-    t.index [ "session_id" ], name: "index_clinical_notes_on_session_id"
-    t.index [ "therapist_id" ], name: "index_clinical_notes_on_therapist_id"
-    t.index [ "user_id" ], name: "index_clinical_notes_on_user_id"
+    t.index ["session_id"], name: "index_clinical_notes_on_session_id"
+    t.index ["therapist_id"], name: "index_clinical_notes_on_therapist_id"
+    t.index ["user_id"], name: "index_clinical_notes_on_user_id"
   end
 
   create_table "jwt_denylists", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.datetime "exp"
-    t.string "jti"
+    t.string "jti", null: false
     t.datetime "updated_at", null: false
-    t.index [ "jti" ], name: "index_jwt_denylists_on_jti"
+    t.index ["jti"], name: "index_jwt_denylists_on_jti", unique: true
   end
 
   create_table "patient_notes", force: :cascade do |t|
@@ -62,7 +63,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_13_000011) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.bigint "user_id", null: false
-    t.index [ "user_id" ], name: "index_patient_notes_on_user_id"
+    t.index ["user_id"], name: "index_patient_notes_on_user_id"
   end
 
   create_table "recurring_schedules", force: :cascade do |t|
@@ -74,8 +75,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_13_000011) do
     t.datetime "updated_at", null: false
     t.bigint "user_id", null: false
     t.integer "weekday", null: false
-    t.index [ "user_id", "weekday", "active" ], name: "index_recurring_schedules_on_user_id_and_weekday_and_active"
-    t.index [ "user_id" ], name: "index_recurring_schedules_on_user_id"
+    t.index ["user_id", "weekday", "active"], name: "index_recurring_schedules_on_user_id_and_weekday_and_active"
+    t.index ["user_id"], name: "index_recurring_schedules_on_user_id"
   end
 
   create_table "sessions", force: :cascade do |t|
@@ -87,11 +88,14 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_13_000011) do
     t.integer "session_type", default: 0, null: false
     t.datetime "start_time", null: false
     t.integer "status", default: 0, null: false
+    t.bigint "therapist_id"
     t.datetime "updated_at", null: false
     t.bigint "user_id", null: false
-    t.index [ "recurring_schedule_id" ], name: "index_sessions_on_recurring_schedule_id"
-    t.index [ "start_time" ], name: "index_sessions_on_start_time"
-    t.index [ "user_id" ], name: "index_sessions_on_user_id"
+    t.index ["recurring_schedule_id"], name: "index_sessions_on_recurring_schedule_id"
+    t.index ["start_time"], name: "index_sessions_on_start_time"
+    t.index ["therapist_id", "start_time"], name: "index_sessions_on_therapist_scheduled_slot", unique: true, where: "(status = 0)"
+    t.index ["user_id", "scheduled_at", "session_type"], name: "index_sessions_on_user_scheduled_at_type", unique: true
+    t.index ["user_id"], name: "index_sessions_on_user_id"
   end
 
   create_table "solid_cable_messages", force: :cascade do |t|
@@ -99,9 +103,20 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_13_000011) do
     t.bigint "channel_hash", null: false
     t.datetime "created_at", null: false
     t.binary "payload", null: false
-    t.index [ "channel" ], name: "index_solid_cable_messages_on_channel"
-    t.index [ "channel_hash" ], name: "index_solid_cable_messages_on_channel_hash"
-    t.index [ "created_at" ], name: "index_solid_cable_messages_on_created_at"
+    t.index ["channel"], name: "index_solid_cable_messages_on_channel"
+    t.index ["channel_hash"], name: "index_solid_cable_messages_on_channel_hash"
+    t.index ["created_at"], name: "index_solid_cable_messages_on_created_at"
+  end
+
+  create_table "solid_cache_entries", force: :cascade do |t|
+    t.integer "byte_size", null: false
+    t.datetime "created_at", null: false
+    t.binary "key", null: false
+    t.bigint "key_hash", null: false
+    t.binary "value", null: false
+    t.index ["byte_size"], name: "index_solid_cache_entries_on_byte_size"
+    t.index ["key_hash", "byte_size"], name: "index_solid_cache_entries_on_key_hash_and_byte_size"
+    t.index ["key_hash"], name: "index_solid_cache_entries_on_key_hash", unique: true
   end
 
   create_table "solid_queue_blocked_executions", force: :cascade do |t|
@@ -111,24 +126,24 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_13_000011) do
     t.bigint "job_id", null: false
     t.integer "priority", default: 0, null: false
     t.string "queue_name", null: false
-    t.index [ "concurrency_key", "priority", "job_id" ], name: "index_solid_queue_blocked_executions_for_release"
-    t.index [ "expires_at", "concurrency_key" ], name: "index_solid_queue_blocked_executions_for_maintenance"
-    t.index [ "job_id" ], name: "index_solid_queue_blocked_executions_on_job_id", unique: true
+    t.index ["concurrency_key", "priority", "job_id"], name: "index_solid_queue_blocked_executions_for_release"
+    t.index ["expires_at", "concurrency_key"], name: "index_solid_queue_blocked_executions_for_maintenance"
+    t.index ["job_id"], name: "index_solid_queue_blocked_executions_on_job_id", unique: true
   end
 
   create_table "solid_queue_claimed_executions", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.bigint "job_id", null: false
     t.bigint "process_id"
-    t.index [ "job_id" ], name: "index_solid_queue_claimed_executions_on_job_id", unique: true
-    t.index [ "process_id", "job_id" ], name: "index_solid_queue_claimed_executions_on_process_id_and_job_id"
+    t.index ["job_id"], name: "index_solid_queue_claimed_executions_on_job_id", unique: true
+    t.index ["process_id", "job_id"], name: "index_solid_queue_claimed_executions_on_process_id_and_job_id"
   end
 
   create_table "solid_queue_failed_executions", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.text "error"
     t.bigint "job_id", null: false
-    t.index [ "job_id" ], name: "index_solid_queue_failed_executions_on_job_id", unique: true
+    t.index ["job_id"], name: "index_solid_queue_failed_executions_on_job_id", unique: true
   end
 
   create_table "solid_queue_jobs", force: :cascade do |t|
@@ -142,17 +157,17 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_13_000011) do
     t.string "queue_name", null: false
     t.datetime "scheduled_at"
     t.datetime "updated_at", null: false
-    t.index [ "active_job_id" ], name: "index_solid_queue_jobs_on_active_job_id"
-    t.index [ "class_name" ], name: "index_solid_queue_jobs_on_class_name"
-    t.index [ "finished_at" ], name: "index_solid_queue_jobs_on_finished_at"
-    t.index [ "queue_name", "finished_at" ], name: "index_solid_queue_jobs_for_filtering"
-    t.index [ "scheduled_at", "finished_at" ], name: "index_solid_queue_jobs_for_alerting"
+    t.index ["active_job_id"], name: "index_solid_queue_jobs_on_active_job_id"
+    t.index ["class_name"], name: "index_solid_queue_jobs_on_class_name"
+    t.index ["finished_at"], name: "index_solid_queue_jobs_on_finished_at"
+    t.index ["queue_name", "finished_at"], name: "index_solid_queue_jobs_for_filtering"
+    t.index ["scheduled_at", "finished_at"], name: "index_solid_queue_jobs_for_alerting"
   end
 
   create_table "solid_queue_pauses", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "queue_name", null: false
-    t.index [ "queue_name" ], name: "index_solid_queue_pauses_on_queue_name", unique: true
+    t.index ["queue_name"], name: "index_solid_queue_pauses_on_queue_name", unique: true
   end
 
   create_table "solid_queue_processes", force: :cascade do |t|
@@ -164,9 +179,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_13_000011) do
     t.string "name", null: false
     t.integer "pid", null: false
     t.bigint "supervisor_id"
-    t.index [ "last_heartbeat_at" ], name: "index_solid_queue_processes_on_last_heartbeat_at"
-    t.index [ "name", "supervisor_id" ], name: "index_solid_queue_processes_on_name_and_supervisor_id", unique: true
-    t.index [ "supervisor_id" ], name: "index_solid_queue_processes_on_supervisor_id"
+    t.index ["last_heartbeat_at"], name: "index_solid_queue_processes_on_last_heartbeat_at"
+    t.index ["name", "supervisor_id"], name: "index_solid_queue_processes_on_name_and_supervisor_id", unique: true
+    t.index ["supervisor_id"], name: "index_solid_queue_processes_on_supervisor_id"
   end
 
   create_table "solid_queue_ready_executions", force: :cascade do |t|
@@ -174,9 +189,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_13_000011) do
     t.bigint "job_id", null: false
     t.integer "priority", default: 0, null: false
     t.string "queue_name", null: false
-    t.index [ "job_id" ], name: "index_solid_queue_ready_executions_on_job_id", unique: true
-    t.index [ "priority", "job_id" ], name: "index_solid_queue_poll_all"
-    t.index [ "queue_name", "priority", "job_id" ], name: "index_solid_queue_poll_by_queue"
+    t.index ["job_id"], name: "index_solid_queue_ready_executions_on_job_id", unique: true
+    t.index ["priority", "job_id"], name: "index_solid_queue_poll_all"
+    t.index ["queue_name", "priority", "job_id"], name: "index_solid_queue_poll_by_queue"
   end
 
   create_table "solid_queue_recurring_executions", force: :cascade do |t|
@@ -184,8 +199,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_13_000011) do
     t.bigint "job_id", null: false
     t.datetime "run_at", null: false
     t.string "task_key", null: false
-    t.index [ "job_id" ], name: "index_solid_queue_recurring_executions_on_job_id", unique: true
-    t.index [ "task_key", "run_at" ], name: "index_solid_queue_recurring_executions_on_task_key_and_run_at", unique: true
+    t.index ["job_id"], name: "index_solid_queue_recurring_executions_on_job_id", unique: true
+    t.index ["task_key", "run_at"], name: "index_solid_queue_recurring_executions_on_task_key_and_run_at", unique: true
   end
 
   create_table "solid_queue_recurring_tasks", force: :cascade do |t|
@@ -200,8 +215,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_13_000011) do
     t.string "schedule", null: false
     t.boolean "static", default: true, null: false
     t.datetime "updated_at", null: false
-    t.index [ "key" ], name: "index_solid_queue_recurring_tasks_on_key", unique: true
-    t.index [ "static" ], name: "index_solid_queue_recurring_tasks_on_static"
+    t.index ["key"], name: "index_solid_queue_recurring_tasks_on_key", unique: true
+    t.index ["static"], name: "index_solid_queue_recurring_tasks_on_static"
   end
 
   create_table "solid_queue_scheduled_executions", force: :cascade do |t|
@@ -210,8 +225,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_13_000011) do
     t.integer "priority", default: 0, null: false
     t.string "queue_name", null: false
     t.datetime "scheduled_at", null: false
-    t.index [ "job_id" ], name: "index_solid_queue_scheduled_executions_on_job_id", unique: true
-    t.index [ "scheduled_at", "priority", "job_id" ], name: "index_solid_queue_dispatch_all"
+    t.index ["job_id"], name: "index_solid_queue_scheduled_executions_on_job_id", unique: true
+    t.index ["scheduled_at", "priority", "job_id"], name: "index_solid_queue_dispatch_all"
   end
 
   create_table "solid_queue_semaphores", force: :cascade do |t|
@@ -220,9 +235,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_13_000011) do
     t.string "key", null: false
     t.datetime "updated_at", null: false
     t.integer "value", default: 1, null: false
-    t.index [ "expires_at" ], name: "index_solid_queue_semaphores_on_expires_at"
-    t.index [ "key", "value" ], name: "index_solid_queue_semaphores_on_key_and_value"
-    t.index [ "key" ], name: "index_solid_queue_semaphores_on_key", unique: true
+    t.index ["expires_at"], name: "index_solid_queue_semaphores_on_expires_at"
+    t.index ["key", "value"], name: "index_solid_queue_semaphores_on_key_and_value"
+    t.index ["key"], name: "index_solid_queue_semaphores_on_key", unique: true
   end
 
   create_table "users", force: :cascade do |t|
@@ -230,8 +245,10 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_13_000011) do
     t.datetime "created_at", null: false
     t.string "email", default: "", null: false
     t.string "encrypted_password", default: "", null: false
+    t.integer "failed_attempts", default: 0, null: false
     t.boolean "force_password_change", default: false, null: false
     t.string "google_meet_link"
+    t.datetime "locked_at"
     t.boolean "must_change_password", default: false, null: false
     t.string "name", null: false
     t.string "phone"
@@ -240,11 +257,14 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_13_000011) do
     t.string "reset_password_token"
     t.integer "role", default: 0, null: false
     t.bigint "therapist_id"
+    t.integer "token_version", default: 0, null: false
+    t.string "unlock_token"
     t.datetime "updated_at", null: false
-    t.index [ "active" ], name: "index_users_on_active"
-    t.index [ "email" ], name: "index_users_on_email", unique: true
-    t.index [ "reset_password_token" ], name: "index_users_on_reset_password_token", unique: true
-    t.index [ "therapist_id" ], name: "index_users_on_therapist_id"
+    t.index ["active"], name: "index_users_on_active"
+    t.index ["email"], name: "index_users_on_email", unique: true
+    t.index ["reset_password_token"], name: "index_users_on_reset_password_token", unique: true
+    t.index ["therapist_id"], name: "index_users_on_therapist_id"
+    t.index ["unlock_token"], name: "index_users_on_unlock_token", unique: true
   end
 
   create_table "weekly_schedules", force: :cascade do |t|
@@ -256,8 +276,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_13_000011) do
     t.datetime "updated_at", null: false
     t.bigint "user_id", null: false
     t.integer "weekday"
-    t.index [ "user_id", "weekday", "effective_from" ], name: "index_weekly_schedules_on_user_weekday_effective_from", unique: true
-    t.index [ "user_id" ], name: "index_weekly_schedules_on_user_id"
+    t.index ["user_id", "weekday", "effective_from"], name: "index_weekly_schedules_on_user_weekday_effective_from", unique: true
+    t.index ["user_id"], name: "index_weekly_schedules_on_user_id"
   end
 
   add_foreign_key "audit_logs", "users"
@@ -269,6 +289,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_13_000011) do
   add_foreign_key "recurring_schedules", "users"
   add_foreign_key "sessions", "recurring_schedules"
   add_foreign_key "sessions", "users"
+  add_foreign_key "sessions", "users", column: "therapist_id", on_delete: :nullify
   add_foreign_key "solid_queue_blocked_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
   add_foreign_key "solid_queue_claimed_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
   add_foreign_key "solid_queue_failed_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
