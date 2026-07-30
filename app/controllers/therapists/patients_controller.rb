@@ -5,7 +5,7 @@ class Therapists::PatientsController < ApplicationController
 
   def index
     patients = current_user.patients
-                           .includes(:clinical_notes, :sessions, :weekly_schedules)
+                           .includes(:sessions, :weekly_schedules)
 
     render json: patients.map { |p| patient_json(p) }
   end
@@ -18,7 +18,7 @@ class Therapists::PatientsController < ApplicationController
     patient = current_user.patients.build(patient_params)
     patient.role = :client
 
-    generated_password = Devise.friendly_token.first(8)
+    generated_password = Devise.friendly_token.first(16)
     patient.password = generated_password
     patient.must_change_password = true
 
@@ -105,7 +105,7 @@ class Therapists::PatientsController < ApplicationController
 
   def set_patient
     @patient = current_user.patients
-                           .includes(:clinical_notes, :sessions, :weekly_schedules)
+                           .includes(:sessions, :weekly_schedules)
                            .find(params[:id])
   end
 
@@ -174,6 +174,13 @@ class Therapists::PatientsController < ApplicationController
     session.update!(scheduled_at: scheduled_at)
   end
 
+  def clinical_notes_counts
+    @clinical_notes_counts ||= ClinicalNote
+      .where(therapist_id: current_user.id)
+      .group(:user_id)
+      .count
+  end
+
   def patient_json(patient)
     active_schedules = patient.weekly_schedules.select(&:active?)
     all_sessions     = patient.sessions.to_a
@@ -205,17 +212,7 @@ class Therapists::PatientsController < ApplicationController
           status: s.status
         }
       end,
-      clinical_notes: patient.clinical_notes
-                             .where(therapist_id: current_user.id)
-                             .order(created_at: :desc)
-                             .map { |n|
-        {
-          id:         n.id,
-          content:    n.content,
-          date:       n.date,
-          created_at: n.created_at
-        }
-      }
+      clinical_notes_count: clinical_notes_counts[patient.id] || 0
     }
   end
 end

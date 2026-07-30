@@ -5,7 +5,6 @@ RSpec.describe "Therapists::ClinicalNotes", type: :request do
 
   let(:patient) { create(:user, :client, therapist: therapist) }
 
-  #GET /therapists/patients/:patient_id/notes
   describe "GET /therapists/patients/:patient_id/notes" do
     context "quando autenticado como terapeuta" do
       let!(:own_note) { create(:clinical_note, user: patient, therapist: therapist, content: "Minha nota") }
@@ -62,7 +61,6 @@ RSpec.describe "Therapists::ClinicalNotes", type: :request do
     end
   end
 
-  #POST /therapists/patients/:patient_id/notes 
   describe "POST /therapists/patients/:patient_id/notes" do
     let!(:patient_session) { create(:session, :past, user: patient) }
     let(:valid_params) { { session_id: patient_session.id, content: "Paciente apresentou progresso significativo." } }
@@ -160,7 +158,6 @@ RSpec.describe "Therapists::ClinicalNotes", type: :request do
     end
   end
 
-  #GET /therapists/patients/:patient_id/notes/:id 
   describe "GET /therapists/patients/:patient_id/notes/:id" do
     let!(:note) { create(:clinical_note, user: patient, therapist: therapist) }
 
@@ -214,7 +211,6 @@ RSpec.describe "Therapists::ClinicalNotes", type: :request do
     end
   end
 
-  #PUT /therapists/patients/:patient_id/notes/:id 
   describe "PUT /therapists/patients/:patient_id/notes/:id" do
     let!(:note) { create(:clinical_note, user: patient, therapist: therapist, content: "Original") }
 
@@ -286,7 +282,6 @@ RSpec.describe "Therapists::ClinicalNotes", type: :request do
     end
   end
 
-  #DELETE /therapists/patients/:patient_id/notes/:id
   describe "DELETE /therapists/patients/:patient_id/notes/:id" do
     let!(:note) { create(:clinical_note, user: patient, therapist: therapist) }
 

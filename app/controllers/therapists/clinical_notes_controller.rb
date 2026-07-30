@@ -8,6 +8,8 @@ class Therapists::ClinicalNotesController < ApplicationController
     render json: @patient.clinical_notes
                          .where(therapist: current_user)
                          .order(created_at: :desc)
+                         .limit(page_limit)
+                         .offset(page_offset)
                          .as_json(only: %i[id content date created_at])
   end
 

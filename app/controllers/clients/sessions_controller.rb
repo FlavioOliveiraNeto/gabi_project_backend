@@ -4,7 +4,13 @@ class Clients::SessionsController < ApplicationController
   before_action :enforce_password_change!
 
   def index
-    sessions = current_user.sessions.order(:scheduled_at)
+    sessions = current_user.sessions
+                           .order(scheduled_at: :desc)
+                           .limit(page_limit)
+                           .offset(page_offset)
+                           .to_a
+                           .reverse
+
     render json: sessions.map { |session|
       {
         id: session.id,

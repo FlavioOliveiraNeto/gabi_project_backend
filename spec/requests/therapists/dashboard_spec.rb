@@ -3,9 +3,7 @@ require 'rails_helper'
 RSpec.describe "Therapists::Dashboard", type: :request do
   include_context "autenticado como terapeuta"
 
-  #GET /therapists/dashboard 
   describe "GET /therapists/dashboard" do
-    #Autenticação e autorização 
     context "sem autenticação" do
       it "retorna 401" do
         get therapists_dashboard_path
@@ -30,7 +28,7 @@ RSpec.describe "Therapists::Dashboard", type: :request do
       end
     end
 
-    #Happy path base
+    # Happy path base
     context "com dados mínimos" do
       before { get therapists_dashboard_path, headers: headers }
 
@@ -43,7 +41,6 @@ RSpec.describe "Therapists::Dashboard", type: :request do
       end
     end
 
-    #stats 
     describe "stats" do
       context "sem pacientes nem sessões" do
         before { get therapists_dashboard_path, headers: headers }
@@ -119,7 +116,6 @@ RSpec.describe "Therapists::Dashboard", type: :request do
       end
     end
 
-    #patients
     describe "patients" do
       context "sem pacientes" do
         before { get therapists_dashboard_path, headers: headers }
@@ -144,7 +140,7 @@ RSpec.describe "Therapists::Dashboard", type: :request do
             "id", "name", "email", "google_meet_link",
             "schedule_type", "sessions_per_week", "session_days",
             "session_time", "extra_sessions",
-            "completed_sessions", "absent_sessions", "clinical_notes"
+            "completed_sessions", "absent_sessions", "clinical_notes_count"
           )
         end
 
@@ -164,8 +160,12 @@ RSpec.describe "Therapists::Dashboard", type: :request do
           expect(json_body["patients"].first["absent_sessions"]).to eq(0)
         end
 
-        it "retorna clinical_notes vazio" do
-          expect(json_body["patients"].first["clinical_notes"]).to eq([])
+        it "retorna clinical_notes_count zero" do
+          expect(json_body["patients"].first["clinical_notes_count"]).to eq(0)
+        end
+
+        it "não expõe o conteúdo das notas clínicas no payload do dashboard" do
+          expect(json_body["patients"].first).not_to have_key("clinical_notes")
         end
       end
 
@@ -188,7 +188,7 @@ RSpec.describe "Therapists::Dashboard", type: :request do
         end
 
         it "retorna session_days com o weekday do schedule" do
-          expect(json_body["patients"].first["session_days"]).to eq(["monday"])
+          expect(json_body["patients"].first["session_days"]).to eq([ "monday" ])
         end
       end
 
@@ -236,24 +236,22 @@ RSpec.describe "Therapists::Dashboard", type: :request do
 
         before { get therapists_dashboard_path, headers: headers }
 
-        it "inclui apenas as notas do terapeuta autenticado" do
+        it "conta apenas as notas do terapeuta autenticado" do
           other_therapist = create(:user, :therapist)
           create(:clinical_note, user: patient, therapist: other_therapist, content: "Nota alheia")
 
           get therapists_dashboard_path, headers: headers
 
-          expect(json_body["patients"].first["clinical_notes"].length).to eq(2)
+          expect(json_body["patients"].first["clinical_notes_count"]).to eq(2)
         end
 
-        it "retorna as notas ordenadas pela mais recente primeiro" do
-          notes = json_body["patients"].first["clinical_notes"]
-          expect(notes.first["content"]).to eq("Nota mais recente")
-          expect(notes.last["content"]).to eq("Nota mais antiga")
+        it "não expõe o conteúdo das notas em lugar nenhum do payload" do
+          expect(response.body).not_to include("Nota mais recente")
+          expect(response.body).not_to include("Nota mais antiga")
         end
 
-        it "retorna o shape das clinical_notes" do
-          note = json_body["patients"].first["clinical_notes"].first
-          expect(note).to include("id", "content", "date", "created_at")
+        it "não inclui a chave clinical_notes" do
+          expect(json_body["patients"].first).not_to have_key("clinical_notes")
         end
       end
 
@@ -269,12 +267,11 @@ RSpec.describe "Therapists::Dashboard", type: :request do
 
         it "retorna apenas o paciente do terapeuta autenticado" do
           ids = json_body["patients"].map { |p| p["id"] }
-          expect(ids).to eq([patient.id])
+          expect(ids).to eq([ patient.id ])
         end
       end
     end
 
-    #calendar_sessions 
     describe "calendar_sessions" do
       context "sem sessões" do
         before { get therapists_dashboard_path, headers: headers }
@@ -285,10 +282,14 @@ RSpec.describe "Therapists::Dashboard", type: :request do
       end
 
       context "com sessões do terapeuta" do
+        let(:fixed_slot) { Time.zone.local(2025, 8, 15, 14, 30, 0) }
+
+        around { |example| travel_to(fixed_slot - 1.day) { example.run } }
+
         let!(:patient) { create(:user, :client, therapist: therapist) }
         let!(:session) do
           create(:session, user: patient,
-                 scheduled_at: Time.zone.local(2025, 8, 15, 14, 30, 0),
+                 scheduled_at: fixed_slot,
                  status: :scheduled, session_type: :recurring)
         end
 
@@ -330,7 +331,7 @@ RSpec.describe "Therapists::Dashboard", type: :request do
 
         it "retorna sessões em ordem crescente de data" do
           ids = json_body["calendar_sessions"].map { |s| s["id"] }
-          expect(ids).to eq([session_sooner.id, session_later.id])
+          expect(ids).to eq([ session_sooner.id, session_later.id ])
         end
       end
 

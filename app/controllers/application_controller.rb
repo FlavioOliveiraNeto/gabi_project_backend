@@ -6,6 +6,10 @@ class ApplicationController < ActionController::Base
   # Popula Current.user para que os callbacks de auditoria saibam quem agiu.
   before_action :set_current_user
 
+  before_action :disable_response_caching
+
+  rescue_from ActiveRecord::RecordNotUnique, with: :render_conflict
+
   protected
 
   def set_current_user
@@ -20,6 +24,34 @@ class ApplicationController < ActionController::Base
     else
       root_path
     end
+  end
+
+  def disable_response_caching
+    response.headers["Cache-Control"] = "no-store"
+    response.headers["Pragma"]        = "no-cache"
+  end
+
+  DEFAULT_PAGE_SIZE = 50
+  MAX_PAGE_SIZE     = 200
+
+  def page_limit
+    requested = params[:limit].to_i
+
+    return DEFAULT_PAGE_SIZE unless requested.positive?
+
+    [ requested, MAX_PAGE_SIZE ].min
+  end
+
+  def page_offset
+    offset = params[:offset].to_i
+    offset.negative? ? 0 : offset
+  end
+
+  def render_conflict(exception)
+    Rails.logger.warn "[Conflito de unicidade] #{exception.message}"
+
+    render json: { errors: [ "Este horário acabou de ser ocupado. Recarregue a agenda e tente novamente." ] },
+           status: :unprocessable_entity
   end
 
   def enforce_password_change!
@@ -82,9 +114,15 @@ class ApplicationController < ActionController::Base
   end
 
   def hmac_csrf(user_id, jti)
-    secret = Rails.application.credentials.devise_jwt_secret_key ||
-             Rails.application.secret_key_base
-    OpenSSL::HMAC.hexdigest("SHA256", secret, "csrf:#{user_id}:#{jti}")
+    OpenSSL::HMAC.hexdigest("SHA256", jwt_secret, "csrf:#{user_id}:#{jti}")
+  end
+
+  # Fonte única do segredo de JWT: o valor que o devise-jwt está realmente usando
+  # para assinar. Antes, três lugares reconstruíam o segredo por conta própria a
+  # partir de credentials — que este projeto não usa —, e qualquer divergência
+  # entre eles quebra silenciosamente a verificação de token e o CSRF.
+  def jwt_secret
+    Warden::JWTAuth.config.secret
   end
 
   def set_auth_cookie(token)

@@ -2,13 +2,16 @@ class Therapists::DashboardController < ApplicationController
   before_action :authenticate_user!
   before_action :ensure_therapist!
 
+  CALENDAR_MONTHS_BACK    = 3
+  CALENDAR_MONTHS_FORWARD = 3
+
   def index
     therapist = current_user
 
     sessions = Session
-      .joins(:user)
       .includes(:user)
-      .where(users: { therapist_id: therapist.id })
+      .where(therapist_id: therapist.id)
+      .where(start_time: calendar_window)
       .order(:start_time)
 
     patients = User
@@ -28,9 +31,25 @@ class Therapists::DashboardController < ApplicationController
     render json: { error: "Acesso restrito." }, status: :forbidden unless current_user.therapist?
   end
 
+  def calendar_window
+    from = parse_date(params[:from]) || CALENDAR_MONTHS_BACK.months.ago.beginning_of_month.to_date
+    to   = parse_date(params[:to])   || CALENDAR_MONTHS_FORWARD.months.from_now.end_of_month.to_date
+
+    to = from + 12.months if to > from + 12.months
+
+    from.beginning_of_day..to.end_of_day
+  end
+
+  def parse_date(value)
+    return nil if value.blank?
+
+    Date.parse(value.to_s)
+  rescue Date::Error
+    nil
+  end
+
   def build_stats(therapist)
-    sessions = Session.joins(:user)
-                      .where(users: { therapist_id: therapist.id })
+    sessions = Session.where(therapist_id: therapist.id)
 
     {
       active_clients: therapist.patients.count,
@@ -44,7 +63,7 @@ class Therapists::DashboardController < ApplicationController
   end
 
   def build_patients(patients)
-    patients.includes(:weekly_schedules, :sessions, :clinical_notes).map do |p|
+    patients.includes(:weekly_schedules, :sessions).map do |p|
       all_schedules    = p.weekly_schedules.to_a
       active_schedules = all_schedules.select(&:active?)
 
@@ -76,13 +95,16 @@ class Therapists::DashboardController < ApplicationController
         completed_sessions: (by_status["completed"] || []).count,
         absent_sessions:    (by_status["absent"] || []).count,
 
-        clinical_notes: p.clinical_notes
-                          .select { |n| n.therapist_id == current_user.id }
-                          .sort_by(&:created_at)
-                          .reverse
-                          .map { |n| { id: n.id, content: n.content, date: n.date, created_at: n.created_at } }
+        clinical_notes_count: notes_count_by_patient[p.id] || 0
       }
     end
+  end
+
+  def notes_count_by_patient
+    @notes_count_by_patient ||= ClinicalNote
+      .where(therapist_id: current_user.id)
+      .group(:user_id)
+      .count
   end
 
   def build_calendar_sessions(sessions)

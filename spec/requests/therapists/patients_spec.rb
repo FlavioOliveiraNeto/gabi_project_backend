@@ -3,7 +3,6 @@ require 'rails_helper'
 RSpec.describe "Therapists::Patients", type: :request do
   include_context "autenticado como terapeuta"
 
-  #GET /therapists/patients 
   describe "GET /therapists/patients" do
     let!(:patient1) { create(:user, :client, therapist: therapist) }
     let!(:patient2) { create(:user, :client, therapist: therapist) }
@@ -20,7 +19,11 @@ RSpec.describe "Therapists::Patients", type: :request do
       end
 
       it "inclui os campos básicos do paciente" do
-        expect(json_body.first).to include("id", "name", "email", "schedule_type", "clinical_notes")
+        expect(json_body.first).to include("id", "name", "email", "schedule_type", "clinical_notes_count")
+      end
+
+      it "não expõe o conteúdo das notas clínicas na listagem" do
+        expect(json_body.first).not_to have_key("clinical_notes")
       end
     end
 
@@ -52,7 +55,6 @@ RSpec.describe "Therapists::Patients", type: :request do
     end
   end
 
-  #GET /therapists/patients/:id 
   describe "GET /therapists/patients/:id" do
     let!(:patient) { create(:user, :client, therapist: therapist) }
 
@@ -67,7 +69,7 @@ RSpec.describe "Therapists::Patients", type: :request do
         expect(json_body).to include(
           "id", "name", "email", "google_meet_link", "created_at",
           "schedule_type", "sessions_per_week", "session_days", "session_time",
-          "completed_sessions", "absent_sessions", "extra_sessions", "clinical_notes"
+          "completed_sessions", "absent_sessions", "extra_sessions", "clinical_notes_count"
         )
         expect(json_body["id"]).to eq(patient.id)
         expect(json_body["name"]).to eq(patient.name)
@@ -101,7 +103,6 @@ RSpec.describe "Therapists::Patients", type: :request do
     end
   end
 
-  #POST /therapists/patients 
   describe "POST /therapists/patients" do
     let(:base_params) do
       { name: "Novo Paciente", email: "novo@paciente.com" }
@@ -132,7 +133,7 @@ RSpec.describe "Therapists::Patients", type: :request do
       let(:params_with_regular) do
         base_params.merge(
           schedule_type:     "regular",
-          weekdays:          ["monday", "wednesday"],
+          weekdays:          [ "monday", "wednesday" ],
           sessions_per_week: 2,
           session_time:      "10:00"
         )
@@ -215,7 +216,7 @@ RSpec.describe "Therapists::Patients", type: :request do
 
       it "retorna 422 com mensagem de erro" do
         post therapists_patients_path,
-             params: base_params.merge(schedule_type: "regular", weekdays: ["monday"], session_time: "10:00"),
+             params: base_params.merge(schedule_type: "regular", weekdays: [ "monday" ], session_time: "10:00"),
              headers: headers,
              as: :json
 
@@ -245,7 +246,6 @@ RSpec.describe "Therapists::Patients", type: :request do
     end
   end
 
-  #PUT /therapists/patients/:id 
   describe "PUT /therapists/patients/:id" do
     let!(:patient) { create(:user, :client, therapist: therapist) }
 
@@ -310,7 +310,6 @@ RSpec.describe "Therapists::Patients", type: :request do
     end
   end
 
-  #PUT /therapists/patients/:id/update_schedule 
   describe "PUT /therapists/patients/:id/update_schedule" do
     let!(:patient) { create(:user, :client, therapist: therapist) }
 
@@ -325,7 +324,7 @@ RSpec.describe "Therapists::Patients", type: :request do
           put update_schedule_therapists_patient_path(patient),
               params: {
                 schedule_type:     "regular",
-                weekdays:          ["tuesday"],
+                weekdays:          [ "tuesday" ],
                 sessions_per_week: 1,
                 session_time:      "09:00",
                 effective_from:    "2026-03-08"
@@ -405,7 +404,7 @@ RSpec.describe "Therapists::Patients", type: :request do
         put update_schedule_therapists_patient_path(patient),
             params: {
               schedule_type:     "regular",
-              weekdays:          ["monday"],
+              weekdays:          [ "monday" ],
               sessions_per_week: 1,
               session_time:      "09:00"
             },
@@ -423,7 +422,7 @@ RSpec.describe "Therapists::Patients", type: :request do
 
       it "retorna 404" do
         put update_schedule_therapists_patient_path(other_patient),
-            params: { schedule_type: "regular", weekdays: ["monday"], session_time: "09:00" },
+            params: { schedule_type: "regular", weekdays: [ "monday" ], session_time: "09:00" },
             headers: headers,
             as: :json
 
@@ -455,7 +454,6 @@ RSpec.describe "Therapists::Patients", type: :request do
     end
   end
 
-  #DELETE /therapists/patients/:id 
   describe "DELETE /therapists/patients/:id" do
     let!(:patient) { create(:user, :client, therapist: therapist) }
 
