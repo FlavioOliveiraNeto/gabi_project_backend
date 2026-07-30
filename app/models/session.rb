@@ -1,5 +1,6 @@
 class Session < ApplicationRecord
   include Auditable
+  include MeetLinkValidatable
 
   InvalidTransition = Class.new(StandardError)
 
@@ -24,6 +25,7 @@ class Session < ApplicationRecord
 
   belongs_to :user
   belongs_to :recurring_schedule, optional: true
+  belongs_to :therapist, class_name: "User", optional: true
   has_one    :clinical_note
 
   validates :user,         presence: true
@@ -31,6 +33,8 @@ class Session < ApplicationRecord
   validates :end_time,     presence: true
   validates :status,       presence: true
   validates :session_type, presence: true
+
+  validates_meet_link :meet_link
 
   validate :end_time_after_start_time
   validate :duration_within_limit
@@ -42,6 +46,8 @@ class Session < ApplicationRecord
   scope :past,      -> { where("start_time < ?", Time.current) }
   scope :for_user,  ->(user) { where(user: user) }
   scope :in_range,  ->(from, to) { where(start_time: from..to) }
+
+  before_save :sync_therapist_id
 
   after_create { log_audit("create") }
 
@@ -97,6 +103,10 @@ class Session < ApplicationRecord
   end
 
   private
+
+  def sync_therapist_id
+    self.therapist_id = user&.therapist_id
+  end
 
   def end_time_after_start_time
     return unless start_time.present? && end_time.present?

@@ -59,7 +59,7 @@ class SessionGeneratorService
         session.start_time = datetime
         session.end_time   = datetime + 50.minutes
       end
-    rescue ActiveRecord::RecordInvalid => e
+    rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotUnique => e
       Rails.logger.warn "[SessionGenerator] Conflito ignorado para paciente ##{patient.id} em #{datetime}: #{e.message}"
     end
   end
