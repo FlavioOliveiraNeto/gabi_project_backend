@@ -16,8 +16,8 @@ class JwtCookieToHeader
         if valid_jwt_structure?(token)
           env["HTTP_AUTHORIZATION"] = "Bearer #{token}"
         elsif !SAFE_METHODS.include?(env["REQUEST_METHOD"])
-          return [403, { "Content-Type" => "application/json" },
-                  ['{"error":"Requisição inválida (CSRF)."}']]
+          return [ 403, { "Content-Type" => "application/json" },
+                  [ '{"error":"Requisição inválida (CSRF)."}' ] ]
         end
       end
     end

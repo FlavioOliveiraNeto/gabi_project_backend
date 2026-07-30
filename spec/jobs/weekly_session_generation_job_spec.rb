@@ -4,16 +4,12 @@ RSpec.describe WeeklySessionGenerationJob, type: :job do
   let(:therapist) { create(:user, :therapist) }
   let(:patient)   { create(:user, :client, therapist: therapist) }
 
-  
-  # Atributo de classe (não pertence ao describe '#perform')
   describe ".queue_name" do
     it "usa a fila :default" do
       expect(described_class.queue_name).to eq("default")
     end
   end
 
-  
-  # #perform
   describe "#perform" do
     context "nenhum terapeuta cadastrado" do
       it "não gera sessões" do
@@ -49,7 +45,6 @@ RSpec.describe WeeklySessionGenerationJob, type: :job do
                time: "10:00", effective_from: Date.new(2026, 2, 1))
       end
 
-      # Todas as asserções sobre a execução padrão compartilham o mesmo travel_to e perform
       context "ao executar no primeiro dia do mês (2026-03-01)" do
         around { |example| travel_to(Time.zone.local(2026, 3, 1)) { example.run } }
 
@@ -64,7 +59,6 @@ RSpec.describe WeeklySessionGenerationJob, type: :job do
         end
 
         it "gera exatamente 9 sessões (5 segundas em mar/2026 + 4 em abr/2026)" do
-          # mar/2026: 2, 9, 16, 23, 30 — abr/2026: 6, 13, 20, 27
           expect(patient.sessions.where(session_type: :recurring).count).to eq(9)
         end
 
@@ -121,7 +115,6 @@ RSpec.describe WeeklySessionGenerationJob, type: :job do
       it "gera sessões apenas até a data de encerramento da agenda" do
         travel_to Time.zone.local(2026, 3, 1) do
           described_class.new.perform
-          # segundas em mar/2026 até 16/03: 2, 9, 16 → 3 sessões
           dates = patient.sessions.where(session_type: :recurring).pluck(:scheduled_at).map(&:to_date)
           expect(dates.count).to eq(3)
           expect(dates).to all(be <= Date.new(2026, 3, 16))

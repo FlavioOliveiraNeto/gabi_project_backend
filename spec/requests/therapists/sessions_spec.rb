@@ -5,7 +5,6 @@ RSpec.describe "Therapists::Sessions", type: :request do
   let(:patient)   { create(:user, :client, therapist: therapist) }
   let(:headers)   { auth_headers_for(therapist) }
 
-  #POST /therapists/sessions 
   describe "POST /therapists/sessions" do
     let(:valid_params) do
       {
@@ -140,7 +139,6 @@ RSpec.describe "Therapists::Sessions", type: :request do
     end
   end
 
-  #PUT /therapists/sessions/:id 
   describe "PUT /therapists/sessions/:id" do
     context "sem autenticação" do
       let!(:session) { create(:session, user: patient, status: :scheduled, scheduled_at: 1.week.from_now) }
@@ -268,7 +266,6 @@ RSpec.describe "Therapists::Sessions", type: :request do
     end
   end
 
-  #DELETE /therapists/sessions/:id ─
   describe "DELETE /therapists/sessions/:id" do
     let!(:session) { create(:session, user: patient, status: :scheduled, scheduled_at: 1.week.from_now) }
 

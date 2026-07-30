@@ -5,7 +5,6 @@ RSpec.describe "Clients::Sessions", type: :request do
   let(:client)    { create(:user, :client, therapist: therapist) }
   let(:headers)   { auth_headers_for(client) }
 
-  #GET /clients/sessions
   describe "GET /clients/sessions" do
     context "sem autenticação" do
       it "retorna 401" do

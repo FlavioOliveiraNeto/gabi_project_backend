@@ -7,7 +7,7 @@ RSpec.describe JwtCookieToHeader do
   let(:inner_app) do
     lambda do |env|
       captured_env.merge!(env)
-      [200, {}, ["OK"]]
+      [ 200, {}, [ "OK" ] ]
     end
   end
 
@@ -21,7 +21,6 @@ RSpec.describe JwtCookieToHeader do
     { status: status, headers: headers, body: body.join, env: captured_env }
   end
 
-  # Injeção do cookie como Authorization header
   describe "injeção do cookie como Authorization header" do
     before { call_middleware(cookie: "auth_token=#{VALID_JWT}") }
 
@@ -50,8 +49,7 @@ RSpec.describe JwtCookieToHeader do
       expect(captured_env["REQUEST_METHOD"]).to eq("POST")
     end
   end
-  
-  # Preservação do Authorization header existente
+
   describe "preservação do Authorization header existente" do
     it "não substitui o header Authorization quando já está presente" do
       result = call_middleware(
@@ -62,7 +60,6 @@ RSpec.describe JwtCookieToHeader do
     end
   end
 
-  # Sem cookie auth_token — noop
   describe "sem cookie auth_token" do
     it "não define HTTP_AUTHORIZATION quando não há cookies" do
       call_middleware
@@ -92,7 +89,6 @@ RSpec.describe JwtCookieToHeader do
     end
   end
 
-  # Token com estrutura inválida — proteção CSRF
   describe "token com estrutura inválida — proteção CSRF" do
     let(:invalid_token) { "nao.e.jwt.valido.de.verdade" }
 
@@ -136,8 +132,7 @@ RSpec.describe JwtCookieToHeader do
       end
     end
   end
-  
-  # valid_jwt_structure? — variações de token malformado em método POST
+
   describe "valid_jwt_structure? — tokens malformados bloqueiam métodos não-seguros" do
     def expect_403_for(token)
       result = call_middleware(cookie: "auth_token=#{token}", method: "POST")
@@ -157,12 +152,10 @@ RSpec.describe JwtCookieToHeader do
     end
 
     it "rejeita token cujo header decodifica mas não é JSON" do
-      # Base64url de "not-json" → "bm90LWpzb24"
       expect_403_for("bm90LWpzb24.payload.sig")
     end
 
     it "rejeita token cujo header é JSON Array e não Hash" do
-      # Base64url de "[]" → "W10"
       expect_403_for("W10.payload.sig")
     end
   end

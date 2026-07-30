@@ -61,8 +61,8 @@ group :test do
   gem "timecop"
 end
 
-gem 'devise'
+gem "devise"
 gem "devise-jwt"
-gem 'rack-attack'
+gem "rack-attack"
 gem "rack-cors"
-gem 'secure_headers'
+gem "secure_headers"

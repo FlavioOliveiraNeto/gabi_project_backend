@@ -11,7 +11,7 @@ RSpec.describe ScheduleChangeService do
       effective_from:  Date.current,
       schedule_type:   "regular",
       schedule_params: {
-        weekdays:          ["monday"],
+        weekdays:          [ "monday" ],
         sessions_per_week: 1,
         session_time:      "10:00"
       }
@@ -19,7 +19,6 @@ RSpec.describe ScheduleChangeService do
     described_class.new(**defaults.merge(overrides))
   end
 
-  # TRANSIÇÃO PARA REGULAR
   describe "#call - schedule_type: 'regular'" do
     it "retorna o patient" do
       expect(build_service.call).to eq(patient)
@@ -42,7 +41,7 @@ RSpec.describe ScheduleChangeService do
 
           build_service(
             effective_from:  effective_from,
-            schedule_params: { weekdays: ["monday"], sessions_per_week: 1, session_time: "10:00" }
+            schedule_params: { weekdays: [ "monday" ], sessions_per_week: 1, session_time: "10:00" }
           ).call
 
           first_session = patient.sessions.where(session_type: :recurring).order(:scheduled_at).first
@@ -54,13 +53,11 @@ RSpec.describe ScheduleChangeService do
     context "paciente com agenda ativa (mudando dias)" do
       let(:effective_from) { Date.current + 14.days }
 
-      # Sessão ANTES da vigência (NÃO deve ser afetada)
       let!(:session_before) do
         create(:session, :scheduled, user: patient,
                scheduled_at: effective_from - 3.days)
       end
 
-      # Sessão APÓS a vigência (DEVE ser cancelada)
       let!(:session_after) do
         create(:session, :scheduled, user: patient,
                scheduled_at: effective_from + 7.days)
@@ -74,7 +71,7 @@ RSpec.describe ScheduleChangeService do
       before do
         build_service(
           effective_from:  effective_from,
-          schedule_params: { weekdays: ["friday"], sessions_per_week: 1, session_time: "14:00" }
+          schedule_params: { weekdays: [ "friday" ], sessions_per_week: 1, session_time: "14:00" }
         ).call
       end
 
@@ -140,7 +137,7 @@ RSpec.describe ScheduleChangeService do
       it "cria um weekly_schedule para cada dia informado" do
         build_service(
           schedule_params: {
-            weekdays:          ["monday", "wednesday", "friday"],
+            weekdays:          [ "monday", "wednesday", "friday" ],
             sessions_per_week: 3,
             session_time:      "09:00"
           }
@@ -155,18 +152,14 @@ RSpec.describe ScheduleChangeService do
         expired = create(:weekly_schedule, :expired, user: patient)
 
         build_service(
-          schedule_params: { weekdays: ["monday"], sessions_per_week: 1, session_time: "09:00" }
+          schedule_params: { weekdays: [ "monday" ], sessions_per_week: 1, session_time: "09:00" }
         ).call
 
-        # effective_until original (2020-12-31) deve permanecer intacto:
-        # o schedule já está encerrado no passado, então não satisfaz
-        # `effective_until >= effective_from` e não é tocado pelo update_all.
         expect(expired.reload.effective_until).to eq(Date.new(2020, 12, 31))
       end
     end
   end
 
-  # VALIDAÇÕES DE PARÂMETROS
   describe "validações de parâmetros" do
     it "levanta Error se weekdays estiver vazio" do
       service = build_service(
@@ -184,27 +177,26 @@ RSpec.describe ScheduleChangeService do
 
     it "levanta Error se session_time estiver em branco" do
       service = build_service(
-        schedule_params: { weekdays: ["monday"], sessions_per_week: 1, session_time: "" }
+        schedule_params: { weekdays: [ "monday" ], sessions_per_week: 1, session_time: "" }
       )
       expect { service.call }.to raise_error(ScheduleChangeService::Error, /Horário/)
     end
 
     it "levanta Error se session_time for nil" do
       service = build_service(
-        schedule_params: { weekdays: ["monday"], sessions_per_week: 1, session_time: nil }
+        schedule_params: { weekdays: [ "monday" ], sessions_per_week: 1, session_time: nil }
       )
       expect { service.call }.to raise_error(ScheduleChangeService::Error, /Horário/)
     end
 
     it "levanta RecordInvalid se o weekday for inválido" do
       service = build_service(
-        schedule_params: { weekdays: ["dia_invalido"], sessions_per_week: 1, session_time: "10:00" }
+        schedule_params: { weekdays: [ "dia_invalido" ], sessions_per_week: 1, session_time: "10:00" }
       )
       expect { service.call }.to raise_error(ActiveRecord::RecordInvalid)
     end
   end
 
-  # TRANSIÇÃO PARA EXTRA
   describe "#call (schedule_type: 'extra'" do
     let(:effective_from) { Date.current + 7.days }
 
@@ -222,8 +214,6 @@ RSpec.describe ScheduleChangeService do
       create(:weekly_schedule, user: patient, effective_from: 1.month.ago.to_date)
     end
 
-    # Definida antes do before para garantir existência antes da chamada ao service.
-    # Usa horário distinto de session_after para evitar conflito de sobreposição (mínimo 1h).
     let!(:extra_session) do
       create(:session, :scheduled, :extra, user: patient,
              scheduled_at: effective_from + 14.days)
@@ -263,8 +253,7 @@ RSpec.describe ScheduleChangeService do
       expect(patient.weekly_schedules.where("effective_from >= ?", effective_from)).to be_empty
     end
   end
-  
-  # SCHEDULE TYPE DESCONHECIDO
+
   describe "#call (schedule_type desconhecido" do
     it "retorna o patient sem criar schedules nem cancelar sessões" do
       result = build_service(schedule_type: "vacation").call
