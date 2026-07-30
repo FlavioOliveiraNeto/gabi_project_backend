@@ -1,5 +1,6 @@
 class RecurringSchedule < ApplicationRecord
   include Auditable
+  include MeetLinkValidatable
 
   WEEKDAY_NAMES = %w[domingo segunda-feira terça-feira quarta-feira quinta-feira sexta-feira sábado].freeze
 
@@ -12,9 +13,7 @@ class RecurringSchedule < ApplicationRecord
   validates :duration_minutes, presence: true,
                                numericality: { greater_than: 0, less_than_or_equal_to: 60 }
 
-  validates :meet_link,
-            format: { with: /\Ahttps?:\/\//i, message: "deve ser uma URL válida (http/https)" },
-            allow_blank: true
+  validates_meet_link :meet_link
 
   scope :active, -> { where(active: true) }
 

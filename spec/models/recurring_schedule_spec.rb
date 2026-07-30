@@ -98,9 +98,10 @@ RSpec.describe RecurringSchedule, type: :model do
         expect(schedule).to be_valid
       end
 
-      it "é válido com URL http" do
+      it "é inválido com URL http (link de sessão clínica não trafega em claro)" do
         schedule.meet_link = "http://meet.google.com/abc-defg-hij"
-        expect(schedule).to be_valid
+        expect(schedule).to be_invalid
+        expect(schedule.errors[:meet_link]).to be_present
       end
 
       it "é inválido com meet_link sem protocolo" do
