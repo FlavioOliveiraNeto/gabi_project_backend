@@ -1,17 +1,17 @@
 class User < ApplicationRecord
   include Auditable
+  include MeetLinkValidatable
 
   enum :role, { therapist: 0, client: 1 }
 
   devise :database_authenticatable,
-         :registerable,
          :recoverable,
          :rememberable,
          :validatable,
+         :lockable,
          :jwt_authenticatable,
-         jwt_revocation_strategy: JwtDenylist
+         jwt_revocation_strategy: JwtRevocation
 
-  # Legado: terapeuta -> seus clientes (mantido para os controllers existentes)
   has_many :patients,
            class_name:  "User",
            foreign_key: "therapist_id",
@@ -21,7 +21,6 @@ class User < ApplicationRecord
              class_name: "User",
              optional:   true
 
-  # design novo
   has_many :sessions,            dependent: :destroy
   has_many :recurring_schedules, dependent: :destroy
   has_many :clinical_notes,      dependent: :destroy
@@ -31,26 +30,37 @@ class User < ApplicationRecord
            foreign_key: "therapist_id",
            dependent:   :destroy
 
-  # Legado (mantido enquanto controllers antigos usam esses models)
   has_many :patient_notes,   dependent: :destroy
   has_many :weekly_schedules, dependent: :destroy
 
   validates :name, presence: true
   validates :role, presence: true
 
-  ALLOWED_MEET_HOSTS = %w[meet.google.com].freeze
-
-  validate :google_meet_link_is_safe_https_url, if: -> { google_meet_link.present? }
-
-  # ── Escopos ─────────────────────────────────────────────────────────────────
+  validates_meet_link :google_meet_link
 
   scope :clients,  -> { where(role: :client) }
   scope :active,   -> { where(active: true) }
   scope :inactive, -> { where(active: false) }
 
-  # ── Callbacks ───────────────────────────────────────────────────────────────
-
   after_update :cancel_future_sessions_if_deactivated
+
+  after_update :revoke_all_jwts!, if: :credentials_invalidated?
+
+  def active_for_authentication?
+    super && active?
+  end
+
+  def inactive_message
+    active? ? super : :account_inactive
+  end
+
+  def jwt_payload
+    { JwtRevocation::VERSION_CLAIM => token_version }
+  end
+
+  def revoke_all_jwts!
+    update_column(:token_version, token_version + 1)
+  end
 
   def must_change_password?
     must_change_password
@@ -62,14 +72,12 @@ class User < ApplicationRecord
 
   private
 
-  def google_meet_link_is_safe_https_url
-    uri = URI.parse(google_meet_link)
+  def credentials_invalidated?
+    saved_change_to_encrypted_password? || account_deactivated?
+  end
 
-    unless uri.is_a?(URI::HTTPS) && ALLOWED_MEET_HOSTS.include?(uri.host&.downcase)
-      errors.add(:google_meet_link, "deve ser uma URL HTTPS de #{ALLOWED_MEET_HOSTS.join(', ')}")
-    end
-  rescue URI::InvalidURIError
-    errors.add(:google_meet_link, "não é uma URL válida")
+  def account_deactivated?
+    saved_change_to_active? && !active?
   end
 
   def cancel_future_sessions_if_deactivated

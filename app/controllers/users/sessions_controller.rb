@@ -1,6 +1,8 @@
 class Users::SessionsController < Devise::SessionsController
   respond_to :json
 
+  skip_before_action :validate_csrf_token!, only: :create
+
   private
 
   def verify_signed_out_user

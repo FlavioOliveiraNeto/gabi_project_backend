@@ -78,14 +78,14 @@ RSpec.describe User, type: :model do
     end
 
     describe "tamanho da senha" do
-      it "é inválido com senha menor que 8 caracteres" do
-        user.password = "abc123"
+      it "é inválido com senha menor que 12 caracteres" do
+        user.password = "Senha@123!"
         expect(user).to be_invalid
         expect(user.errors[:password]).to be_present
       end
 
-      it "é válido com senha de exatamente 8 caracteres" do
-        user.password = "Senha@12"
+      it "é válido com senha de exatamente 12 caracteres" do
+        user.password = "Senha@123456"
         expect(user).to be_valid
       end
 
@@ -213,11 +213,51 @@ RSpec.describe User, type: :model do
     end
   end
 
+  describe "#active_for_authentication?" do
+    context "when a conta está ativa" do
+      let(:user) { build(:user, active: true) }
+
+      it "retorna true" do
+        expect(user.active_for_authentication?).to be true
+      end
+    end
+
+    context "when a conta está desativada" do
+      let(:user) { build(:user, :inactive) }
+
+      it "retorna false" do
+        expect(user.active_for_authentication?).to be false
+      end
+    end
+  end
+
+  describe "#inactive_message" do
+    context "when a conta está ativa" do
+      let(:user) { build(:user, active: true) }
+
+      it "delega a mensagem padrão do Devise" do
+        expect(user.inactive_message).to eq(:inactive)
+      end
+    end
+
+    context "when a conta está desativada" do
+      let(:user) { build(:user, :inactive) }
+
+      it "retorna :account_inactive" do
+        expect(user.inactive_message).to eq(:account_inactive)
+      end
+    end
+
+    it "possui tradução cadastrada para :account_inactive" do
+      expect(I18n.t("devise.failure.account_inactive")).not_to match(/translation missing/i)
+    end
+  end
+
   describe "segurança da senha" do
-    let(:user) { create(:user, password: "Senha@123!") }
+    let(:user) { create(:user, password: "SenhaSegura@123!") }
 
     it "não armazena a senha em texto plano" do
-      expect(user.encrypted_password).not_to eq("Senha@123!")
+      expect(user.encrypted_password).not_to eq("SenhaSegura@123!")
     end
 
     it "armazena a senha como hash bcrypt (começa com $2)" do
@@ -225,7 +265,7 @@ RSpec.describe User, type: :model do
     end
 
     it "dois usuários com a mesma senha têm encrypted_password diferentes (salt único)" do
-      outro = create(:user, password: "Senha@123!")
+      outro = create(:user, password: "SenhaSegura@123!")
       expect(user.encrypted_password).not_to eq(outro.encrypted_password)
     end
   end

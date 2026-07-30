@@ -12,10 +12,20 @@ Devise.setup do |config|
 
   config.expire_all_remember_me_on_sign_out = true
 
-  config.password_length = 8..128
-  config.email_regexp = /\A[^@\s]+@[^@\s]+\z/
+  config.password_length = 12..128
+
+  config.email_regexp = /\A[^@\s]+@([^@\s]+\.)+[^@\s]+\z/
 
   config.reset_password_within = 6.hours
+
+  config.lock_strategy = :failed_attempts
+  config.maximum_attempts = 10
+
+  config.unlock_strategy = :time
+  config.unlock_in = 1.hour
+
+  config.last_attempt_warning = false
+  config.paranoid = true
 
   config.navigational_formats = []
 
@@ -26,7 +36,13 @@ Devise.setup do |config|
                Rails.application.credentials.devise_jwt_secret_key.presence
 
   if jwt_secret.blank?
-    raise "[Devise JWT] devise_jwt_secret_key não configurado!" if Rails.env.production?
+    build_time = ENV["SECRET_KEY_BASE_DUMMY"].present?
+
+    if Rails.env.production? && !build_time
+      raise "[Devise JWT] DEVISE_JWT_SECRET_KEY não configurado no ambiente de produção! " \
+            "Sem ele os JWTs seriam assinados com o secret_key_base, e rotacionar um " \
+            "arrastaria o outro."
+    end
 
     jwt_secret = Rails.application.secret_key_base
   end

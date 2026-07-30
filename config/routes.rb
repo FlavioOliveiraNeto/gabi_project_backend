@@ -1,9 +1,9 @@
 Rails.application.routes.draw do
   devise_for :users,
+    skip: [ :registrations ],
     defaults: { format: :json },
     controllers: {
       sessions: "users/sessions",
-      registrations: "users/registrations",
       passwords: "users/devise_passwords"
     }
 
@@ -34,15 +34,12 @@ Rails.application.routes.draw do
                 controller: "clinical_notes",
                 as: :clinical_notes
 
-      # Agendas recorrentes por cliente
       resources :recurring_schedules, only: %i[index show create update destroy],
                 param: :id
     end
 
-    # Sessões avulsas e extra (client_id via params)
     resources :sessions, only: %i[create update destroy]
 
-    # Bloqueios de agenda da terapeuta
     resources :calendar_blocks, only: %i[index show create update destroy]
   end
 end

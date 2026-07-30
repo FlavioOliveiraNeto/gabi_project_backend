@@ -4,7 +4,6 @@ RSpec.describe "Users::Sessions (Login / Logout)", type: :request do
   let(:therapist) { create(:user, :therapist) }
   let!(:user)     { create(:user, :client, email: "test@example.com", password: "Password@123", therapist: therapist) }
 
-  # POST /users/sign_in
   describe "POST /users/sign_in" do
     context "com credenciais válidas (cliente)" do
       before do
@@ -135,6 +134,26 @@ RSpec.describe "Users::Sessions (Login / Logout)", type: :request do
       end
     end
 
+    context "com um cookie auth_token obsoleto ainda no browser" do
+      before { auth_headers(user) }
+
+      it "permite fazer login de novo sem enviar X-CSRF-Token" do
+        post user_session_path,
+             params: { user: { email: user.email, password: "Password@123" } },
+             as: :json
+
+        expect(response).to have_http_status(:ok)
+      end
+
+      it "substitui o cookie antigo pelo novo" do
+        post user_session_path,
+             params: { user: { email: user.email, password: "Password@123" } },
+             as: :json
+
+        expect(response.cookies["auth_token"]).to be_present
+      end
+    end
+
     context "com email incorreto" do
       before do
         post user_session_path,
@@ -192,7 +211,6 @@ RSpec.describe "Users::Sessions (Login / Logout)", type: :request do
     end
   end
 
-  # DELETE /users/sign_out
   describe "DELETE /users/sign_out" do
     context "com cookie e CSRF token válidos" do
       let(:auth_headers) { auth_headers_for(user) }

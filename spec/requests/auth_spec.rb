@@ -94,7 +94,7 @@ RSpec.describe "GET /auth/me", type: :request do
   context "determinismo do csrf_token por JTI" do
     before do
       post user_session_path,
-           params: { user: { email: client.email, password: "Senha@123!" } },
+           params: { user: { email: client.email, password: "SenhaSegura@123!" } },
            as: :json
       @login_csrf = json_body["csrf_token"]
 
@@ -111,7 +111,7 @@ RSpec.describe "GET /auth/me", type: :request do
       delete destroy_user_session_path, headers: { "X-CSRF-Token" => first_csrf }
 
       post user_session_path,
-           params: { user: { email: client.email, password: "Senha@123!" } },
+           params: { user: { email: client.email, password: "SenhaSegura@123!" } },
            as: :json
       second_csrf = json_body["csrf_token"]
 

@@ -96,7 +96,7 @@ RSpec.describe "Users::Passwords (Troca de Senha)", type: :request do
 
       it "retorna 200 (qualquer role autenticada pode trocar a própria senha)" do
         put users_change_password_path,
-            params: valid_params.merge(current_password: "Senha@123!"),
+            params: valid_params.merge(current_password: "SenhaSegura@123!"),
             headers: therapist_headers,
             as: :json
 

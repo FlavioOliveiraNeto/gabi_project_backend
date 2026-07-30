@@ -2,7 +2,7 @@ FactoryBot.define do
   factory :user do
     sequence(:email) { |n| "usuario#{n}@clinicagabi.com.br" }
     name     { Faker::Name.name }
-    password { "Senha@123!" }
+    password { "SenhaSegura@123!" }
     role     { :therapist }
     phone    { Faker::PhoneNumber.phone_number }
     force_password_change { false }
