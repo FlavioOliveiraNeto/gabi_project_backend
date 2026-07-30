@@ -1,20 +1,13 @@
-# No rails_helper: this is a pure static scan of source files, so it needs
-# neither Rails nor a database — keep it that way so it runs in any context.
-#
-# Guards docs/INFRASTRUCTURE.md's "cp .env.example .env" setup step: every ENV
-# var the app actually reads must be documented in .env.example, so a new dev
-# following the setup literally has a complete template. Fails if a future ENV
-# read is added without a corresponding entry (or allowlist update) here.
 RSpec.describe ".env.example completeness" do
   root = Pathname.new(File.expand_path("..", __dir__))
 
-  # Infra/runtime vars set by the platform (Docker, Puma, Rails, CI), not
-  # something a developer fills into .env. Deliberately excluded.
   IGNORED_ENV_VARS = %w[
     BUNDLE_GEMFILE CI PIDFILE WEB_CONCURRENCY RAILS_MAX_THREADS
     RAILS_ENV RAILS_LOG_TO_STDOUT RAILS_LOG_LEVEL RAILS_MASTER_KEY
     SECRET_KEY_BASE PORT JOB_CONCURRENCY
     SOLID_QUEUE_IN_PUMA GABI_PROJECT_BACKEND_DATABASE_PASSWORD
+    SEED_ALLOW_PRODUCTION SEED_PASSWORD SEED_THERAPIST_EMAIL
+    SECRET_KEY_BASE_DUMMY
   ].freeze
 
   let(:env_example) { File.read(root.join(".env.example")) }

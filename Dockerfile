@@ -33,7 +33,7 @@ RUN bundle install && \
 COPY . .
 
 RUN sed -i 's/\r$//' bin/rails bin/docker-entrypoint bin/thrust bin/jobs \
- && chmod +x bin/rails bin/docker-entrypoint bin/thrust
+ && chmod +x bin/rails bin/docker-entrypoint bin/thrust bin/jobs
 
 RUN bundle exec bootsnap precompile -j 1 app/ lib/
 

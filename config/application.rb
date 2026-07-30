@@ -1,5 +1,6 @@
 require_relative "boot"
 require_relative "../lib/middleware/jwt_cookie_to_header"
+require_relative "../lib/encryption_config"
 
 require "rails"
 require "active_model/railtie"
@@ -21,11 +22,7 @@ module GabiProjectBackend
     config.load_defaults 8.1
     config.api_only = true
 
-    # `middleware` is ignored because lib/middleware/jwt_cookie_to_header.rb is
-    # manually required above (line 2) and defines a top-level constant, not the
-    # Zeitwerk-expected Middleware::JwtCookieToHeader. Without this, eager_load
-    # (CI/production) raises "uninitialized constant Middleware::JwtCookieToHeader".
-    config.autoload_lib(ignore: %w[assets tasks middleware])
+    config.autoload_lib(ignore: %w[assets tasks middleware encryption_config.rb])
 
     config.middleware.use Rack::Attack
 
@@ -39,10 +36,10 @@ module GabiProjectBackend
 
     config.generators.system_tests = nil
 
-    # Active Record Encryption (lido do .env ou variáveis de ambiente)
-    # Valores padrão apenas para desenvolvimento/teste; produção exige vars reais.
-    config.active_record.encryption.primary_key        = ENV.fetch("AR_ENCRYPTION_PRIMARY_KEY",        "dev_primary_key_32_chars_padding!")
-    config.active_record.encryption.deterministic_key  = ENV.fetch("AR_ENCRYPTION_DETERMINISTIC_KEY",  "dev_deterministic_key_32chars_pad")
-    config.active_record.encryption.key_derivation_salt = ENV.fetch("AR_ENCRYPTION_KEY_DERIVATION_SALT", "dev_key_derivation_salt_32chars!!")
+    encryption_keys = EncryptionConfig.fetch!(env: Rails.env)
+
+    config.active_record.encryption.primary_key          = encryption_keys[:primary_key]
+    config.active_record.encryption.deterministic_key    = encryption_keys[:deterministic_key]
+    config.active_record.encryption.key_derivation_salt  = encryption_keys[:key_derivation_salt]
   end
 end
