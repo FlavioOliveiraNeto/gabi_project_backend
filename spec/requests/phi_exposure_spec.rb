@@ -78,6 +78,66 @@ RSpec.describe "Exposição de PHI e limites de payload", type: :request do
     end
   end
 
+  describe "PHI fora dos logs da aplicação" do
+    let(:session_record) { create(:session, user: patient) }
+
+    def logged_output
+      path = Rails.root.join("log", "#{Rails.env}.log")
+      FileUtils.touch(path)
+      offset = File.size(path)
+
+      yield
+      Rails.logger.flush if Rails.logger.respond_to?(:flush)
+
+      File.open(path) do |file|
+        file.seek(offset)
+        file.read
+      end
+    end
+
+    it "filtra o parâmetro :content na configuração da aplicação" do
+      filter = ActiveSupport::ParameterFilter.new(Rails.application.config.filter_parameters)
+
+      expect(filter.filter("content" => "PHI")).to eq("content" => "[FILTERED]")
+      expect(filter.filter("clinical_note" => { "content" => "PHI" }))
+        .to eq("clinical_note" => { "content" => "[FILTERED]" })
+    end
+
+    it "não registra o conteúdo enviado em POST de anotação clínica" do
+      output = logged_output do
+        post therapists_patient_clinical_notes_path(patient),
+             params: { session_id: session_record.id, content: "PHI-NO-LOG-CREATE" },
+             headers: headers, as: :json
+      end
+
+      expect(response).to have_http_status(:created)
+      expect(output).not_to include("PHI-NO-LOG-CREATE")
+      expect(output).to include("[FILTERED]")
+    end
+
+    it "não registra o conteúdo enviado em PUT de anotação clínica" do
+      note = create(:clinical_note, user: patient, therapist: therapist, session: session_record)
+
+      output = logged_output do
+        put therapists_patient_clinical_note_path(patient, note),
+            params: { content: "PHI-NO-LOG-UPDATE" },
+            headers: headers, as: :json
+      end
+
+      expect(output).not_to include("PHI-NO-LOG-UPDATE")
+    end
+
+    it "não registra o conteúdo das anotações do próprio paciente" do
+      output = logged_output do
+        post clients_patient_notes_path,
+             params: { content: "PHI-NO-LOG-PACIENTE" },
+             headers: patient_auth_headers(patient), as: :json
+      end
+
+      expect(output).not_to include("PHI-NO-LOG-PACIENTE")
+    end
+  end
+
   describe "paginação nas listagens" do
     describe "GET /clients/sessions" do
       let(:client_headers) { patient_auth_headers(patient) }
