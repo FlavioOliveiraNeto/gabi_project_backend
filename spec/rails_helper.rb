@@ -14,19 +14,19 @@ SimpleCov.start "rails" do
 
   minimum_coverage 90 unless ENV["SIMPLECOV_NO_MINIMUM"] || ARGV.include?("--dry-run")
 
-  add_group "Models",      "app/models"
-  add_group "Controllers", "app/controllers"
-  add_group "Services",    "app/services"
-  add_group "Jobs",        "app/jobs"
-  add_group "Mailers",     "app/mailers"
-  add_group "Serializers", "app/serializers"
-  add_group "Policies",    "app/policies"
-  add_group "Lib",         "lib"
+  group "Models",      "app/models"
+  group "Controllers", "app/controllers"
+  group "Services",    "app/services"
+  group "Jobs",        "app/jobs"
+  group "Mailers",     "app/mailers"
+  group "Serializers", "app/serializers"
+  group "Policies",    "app/policies"
+  group "Lib",         "lib"
 
-  add_filter "/spec/"
-  add_filter "/config/"
-  add_filter "/vendor/"
-  add_filter "/db/"
+  skip "/spec/"
+  skip "/config/"
+  skip "/vendor/"
+  skip "/db/"
 end
 
 require "spec_helper"
