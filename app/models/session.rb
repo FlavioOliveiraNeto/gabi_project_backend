@@ -4,6 +4,8 @@ class Session < ApplicationRecord
 
   InvalidTransition = Class.new(StandardError)
 
+  BUFFER_MINUTES = 10.minutes
+
   ALLOWED_DIRECT_TRANSITIONS = {
     "scheduled" => %w[cancelled],
     "completed" => %w[absent],
@@ -127,15 +129,24 @@ class Session < ApplicationRecord
     return unless scheduled?
     return unless user.present?
 
-    conflict = Session
+    neighbours = Session
       .where.not(id: id)
       .where(status: :scheduled)
       .joins(:user)
       .where(users: { therapist_id: user.therapist_id })
+      .where("start_time < ? AND end_time > ?", end_time + BUFFER_MINUTES, start_time - BUFFER_MINUTES)
+
+    return unless neighbours.exists?
+
+    overlapping = neighbours
       .where("start_time < ? AND end_time > ?", end_time, start_time)
       .exists?
 
-    errors.add(:start_time, "conflita com outra sessão já agendada") if conflict
+    if overlapping
+      errors.add(:start_time, "conflita com outra sessão já agendada")
+    else
+      errors.add(:start_time, "não respeita o intervalo de #{BUFFER_MINUTES.in_minutes.to_i} minutos entre sessões")
+    end
   end
 
   def no_calendar_block_conflict

@@ -118,7 +118,6 @@ RSpec.describe SessionGeneratorService do
       around(:each) { |e| travel_to(Time.zone.local(2026, 3, 1)) { e.run } }
 
       before do
-        # Sessão de patient_b às 10:30 → cai no intervalo 09:00-11:00 de patient às 10:00
         create(:session, :scheduled, user: patient_b,
                scheduled_at: Time.zone.local(2026, 3, 2, 10, 30))
       end
@@ -128,7 +127,7 @@ RSpec.describe SessionGeneratorService do
       end
 
       it "registra warning no log para cada sessão conflitante" do
-        expect(Rails.logger).to receive(:warn).with(/Conflito ignorado/).at_least(:once)
+        expect(Rails.logger).to receive(:warn).with(/\[SessionGenerator\] Conflito/).at_least(:once)
         service.generate_for_patient(patient)
       end
     end

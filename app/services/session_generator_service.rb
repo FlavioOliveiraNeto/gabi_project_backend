@@ -1,6 +1,14 @@
+require "set"
+
 class SessionGeneratorService
+  SESSION_DURATION = 50.minutes
+
+  attr_reader :conflicts
+
   def initialize(therapist)
-    @therapist = therapist
+    @therapist     = therapist
+    @conflicts     = []
+    @conflict_keys = Set.new
   end
 
   def generate_for_current_and_next_month
@@ -57,10 +65,36 @@ class SessionGeneratorService
       patient.sessions.find_or_create_by!(scheduled_at: datetime, session_type: :recurring) do |session|
         session.status     = :scheduled
         session.start_time = datetime
-        session.end_time   = datetime + 50.minutes
+        session.end_time   = datetime + SESSION_DURATION
       end
     rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotUnique => e
-      Rails.logger.warn "[SessionGenerator] Conflito ignorado para paciente ##{patient.id} em #{datetime}: #{e.message}"
+      record_conflict(patient, schedule, datetime, e)
     end
+  end
+
+  def record_conflict(patient, schedule, datetime, error)
+    key = [ patient.id, schedule.weekday, schedule.time ]
+    return unless @conflict_keys.add?(key)
+
+    Rails.logger.warn(
+      "[SessionGenerator] Conflito para paciente ##{patient.id} em #{datetime.iso8601}: #{error.message}"
+    )
+
+    @conflicts << {
+      patient_id:   patient.id,
+      weekday:      schedule.weekday,
+      time:         schedule.time,
+      scheduled_at: datetime,
+      reason:       conflict_reason(error)
+    }
+  end
+
+  def conflict_reason(error)
+    if error.is_a?(ActiveRecord::RecordInvalid)
+      messages = error.record.errors.full_messages_for(:start_time)
+      return messages.to_sentence if messages.any?
+    end
+
+    "conflita com outra sessão já agendada"
   end
 end

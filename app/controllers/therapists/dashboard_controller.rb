@@ -87,6 +87,10 @@ class Therapists::DashboardController < ApplicationController
 
         session_time: active_schedules.first&.time,
 
+        schedule_slots: active_schedules
+                          .sort_by { |sch| WeeklySchedule.weekdays[sch.weekday] }
+                          .map { |sch| { weekday: sch.weekday, time: sch.time } },
+
         extra_sessions: extra_sessions.map do |s|
           local_time = s.start_time.in_time_zone(Time.zone)
           { id: s.id, date: local_time.to_date.iso8601, time: local_time.strftime("%H:%M"), status: s.status }

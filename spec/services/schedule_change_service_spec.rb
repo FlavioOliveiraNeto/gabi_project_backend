@@ -189,11 +189,11 @@ RSpec.describe ScheduleChangeService do
       expect { service.call }.to raise_error(ScheduleChangeService::Error, /Horário/)
     end
 
-    it "levanta RecordInvalid se o weekday for inválido" do
+    it "levanta Error se o weekday for inválido" do
       service = build_service(
         schedule_params: { weekdays: [ "dia_invalido" ], sessions_per_week: 1, session_time: "10:00" }
       )
-      expect { service.call }.to raise_error(ActiveRecord::RecordInvalid)
+      expect { service.call }.to raise_error(ScheduleChangeService::Error, /dia da semana/i)
     end
   end
 

@@ -34,6 +34,8 @@ class Therapists::PatientsController < ApplicationController
   rescue ActiveRecord::RecordInvalid => e
     render json: { errors: e.record.errors.full_messages },
            status: :unprocessable_entity
+  rescue ScheduleChangeService::ConflictError => e
+    render json: conflict_json(e), status: :unprocessable_entity
   rescue ScheduleChangeService::Error => e
     render json: { error: e.message },
            status: :unprocessable_entity
@@ -90,12 +92,26 @@ class Therapists::PatientsController < ApplicationController
       render json: patient_json(@patient)
     end
 
+  rescue ScheduleChangeService::ConflictError => e
+    render json: conflict_json(e), status: :unprocessable_entity
   rescue ScheduleChangeService::Error => e
     render json: { error: e.message },
+           status: :unprocessable_entity
+  rescue ActiveRecord::RecordInvalid => e
+    render json: { errors: e.record.errors.full_messages },
            status: :unprocessable_entity
   end
 
   private
+
+  def conflict_json(error)
+    {
+      error:     error.message,
+      conflicts: error.conflicts.map do |conflict|
+        conflict.slice(:weekday, :time, :scheduled_at, :reason)
+      end
+    }
+  end
 
   def ensure_therapist!
     return if current_user.therapist?
@@ -130,10 +146,19 @@ class Therapists::PatientsController < ApplicationController
 
   def schedule_params_from_request
     {
+      schedule_slots:    permitted_schedule_slots,
       weekdays:          params[:weekdays],
       sessions_per_week: params[:sessions_per_week],
       session_time:      params[:session_time]
     }
+  end
+
+  def permitted_schedule_slots
+    return nil if params[:schedule_slots].blank?
+
+    params.permit(schedule_slots: [ :weekday, :time ])
+          .fetch(:schedule_slots, [])
+          .map { |slot| slot.to_h.symbolize_keys }
   end
 
   def parse_effective_from
@@ -181,6 +206,11 @@ class Therapists::PatientsController < ApplicationController
       .count
   end
 
+  def schedule_slots_json(schedules)
+    schedules.sort_by { |s| WeeklySchedule.weekdays[s.weekday] }
+             .map { |s| { weekday: s.weekday, time: s.time } }
+  end
+
   def patient_json(patient)
     active_schedules = patient.weekly_schedules.select(&:active?)
     all_sessions     = patient.sessions.to_a
@@ -200,7 +230,10 @@ class Therapists::PatientsController < ApplicationController
       schedule_type:      schedule_type,
       sessions_per_week:  active_schedules.first&.sessions_per_week || 0,
       session_days:       active_schedules.map(&:weekday),
+      # session_time é o horário do primeiro dia; mantido por compatibilidade.
+      # schedule_slots é a fonte de verdade — um horário por dia da semana.
       session_time:       active_schedules.first&.time,
+      schedule_slots:     schedule_slots_json(active_schedules),
       completed_sessions: (by_status["completed"] || []).count,
       absent_sessions:    (by_status["absent"] || []).count,
       extra_sessions: extra_sessions.map do |s|
