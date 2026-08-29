@@ -160,7 +160,7 @@ RSpec.describe User, type: :model do
   end
 
   describe "#therapist?" do
-    context "when role é therapist" do
+    context "quando role é therapist" do
       let(:user) { build(:user, :therapist) }
 
       it "retorna true" do
@@ -168,7 +168,7 @@ RSpec.describe User, type: :model do
       end
     end
 
-    context "when role é client" do
+    context "quando role é client" do
       let(:user) { build(:user, :client) }
 
       it "retorna false" do
@@ -178,7 +178,7 @@ RSpec.describe User, type: :model do
   end
 
   describe "#client?" do
-    context "when role é client" do
+    context "quando role é client" do
       let(:user) { build(:user, :client) }
 
       it "retorna true" do
@@ -186,7 +186,7 @@ RSpec.describe User, type: :model do
       end
     end
 
-    context "when role é therapist" do
+    context "quando role é therapist" do
       let(:user) { build(:user, :therapist) }
 
       it "retorna false" do
@@ -196,7 +196,7 @@ RSpec.describe User, type: :model do
   end
 
   describe "#must_change_password?" do
-    context "when must_change_password é false" do
+    context "quando must_change_password é false" do
       let(:user) { build(:user, must_change_password: false) }
 
       it "retorna false" do
@@ -204,7 +204,7 @@ RSpec.describe User, type: :model do
       end
     end
 
-    context "when must_change_password é true" do
+    context "quando must_change_password é true" do
       let(:user) { build(:user, :must_change_password) }
 
       it "retorna true" do
@@ -214,7 +214,7 @@ RSpec.describe User, type: :model do
   end
 
   describe "#active_for_authentication?" do
-    context "when a conta está ativa" do
+    context "quando a conta está ativa" do
       let(:user) { build(:user, active: true) }
 
       it "retorna true" do
@@ -222,7 +222,7 @@ RSpec.describe User, type: :model do
       end
     end
 
-    context "when a conta está desativada" do
+    context "quando a conta está desativada" do
       let(:user) { build(:user, :inactive) }
 
       it "retorna false" do
@@ -232,7 +232,7 @@ RSpec.describe User, type: :model do
   end
 
   describe "#inactive_message" do
-    context "when a conta está ativa" do
+    context "quando a conta está ativa" do
       let(:user) { build(:user, active: true) }
 
       it "delega a mensagem padrão do Devise" do
@@ -240,7 +240,7 @@ RSpec.describe User, type: :model do
       end
     end
 
-    context "when a conta está desativada" do
+    context "quando a conta está desativada" do
       let(:user) { build(:user, :inactive) }
 
       it "retorna :account_inactive" do
@@ -295,14 +295,14 @@ RSpec.describe User, type: :model do
   end
 
   describe "senha temporária (criado pela terapeuta)" do
-    context "when criado sem must_change_password explícito" do
+    context "quando criado sem must_change_password explícito" do
       it "must_change_password é false por padrão" do
         user = build(:user)
         expect(user.must_change_password).to be false
       end
     end
 
-    context "when criado com must_change_password: true" do
+    context "quando criado com must_change_password: true" do
       let(:user_com_senha_temp) { build(:user, :must_change_password) }
 
       it "must_change_password é true" do
@@ -343,7 +343,7 @@ RSpec.describe User, type: :model do
   end
 
   describe "desativação de cliente" do
-    include_context "with São Paulo timezone"
+    include_context "com fuso de São Paulo"
 
     let(:cliente) { create(:user, :client, active: true) }
 
@@ -363,7 +363,7 @@ RSpec.describe User, type: :model do
         status: :completed)
     end
 
-    context "when active muda para false" do
+    context "quando active muda para false" do
       before { cliente.update!(active: false) }
 
       it "cancela sessões futuras agendadas" do
@@ -375,7 +375,7 @@ RSpec.describe User, type: :model do
       end
     end
 
-    context "when cliente permanece ativo" do
+    context "quando cliente permanece ativo" do
       it "não altera sessões futuras" do
         expect { cliente.update!(name: "Nome Atualizado") }
           .not_to(change { sessao_futura.reload.status })
@@ -384,14 +384,14 @@ RSpec.describe User, type: :model do
   end
 
   describe "audit trail" do
-    include_context "with São Paulo timezone"
+    include_context "com fuso de São Paulo"
 
     let(:performing_user) { create(:user, :therapist) }
 
     before { Current.user = performing_user }
     after  { Current.user = nil }
 
-    context "when cliente é desativado" do
+    context "quando cliente é desativado" do
       let(:cliente) { create(:user, :client, active: true) }
 
       it "registra um AuditLog" do

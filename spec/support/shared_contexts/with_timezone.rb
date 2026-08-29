@@ -6,16 +6,16 @@
 # de timezone de forma explícita no spec.
 #
 # Uso padrão (São Paulo já é o default global):
-#   include_context "with São Paulo timezone"
+#   include_context "com fuso de São Paulo"
 #
 # Uso para testar em outro fuso:
-#   include_context "with timezone", "UTC"
-#   include_context "with timezone", "America/New_York"
+#   include_context "com fuso horário", "UTC"
+#   include_context "com fuso horário", "America/New_York"
 
-RSpec.shared_context "with São Paulo timezone" do
+RSpec.shared_context "com fuso de São Paulo" do
   around { |example| Time.use_zone("America/Sao_Paulo") { example.run } }
 end
 
-RSpec.shared_context "with timezone" do |zone_name|
+RSpec.shared_context "com fuso horário" do |zone_name|
   around { |example| Time.use_zone(zone_name) { example.run } }
 end

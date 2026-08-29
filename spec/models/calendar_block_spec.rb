@@ -1,7 +1,7 @@
 require "rails_helper"
 
 RSpec.describe CalendarBlock, type: :model do
-  include_context "with São Paulo timezone"
+  include_context "com fuso de São Paulo"
 
   subject(:block) { build(:calendar_block) }
 
@@ -68,7 +68,7 @@ RSpec.describe CalendarBlock, type: :model do
           reason: "Bloco existente")
       end
 
-      context "when novo bloco sobrepõe exatamente o existente" do
+      context "quando novo bloco sobrepõe exatamente o existente" do
         let(:novo) { build(:calendar_block, therapist: therapist, start_time: base, end_time: base + 3.hours) }
 
         it "é inválido" do
@@ -77,7 +77,7 @@ RSpec.describe CalendarBlock, type: :model do
         end
       end
 
-      context "when novo bloco começa durante o existente" do
+      context "quando novo bloco começa durante o existente" do
         let(:novo) do
           build(:calendar_block,
             therapist: therapist,
@@ -91,7 +91,7 @@ RSpec.describe CalendarBlock, type: :model do
         end
       end
 
-      context "when novo bloco termina durante o existente" do
+      context "quando novo bloco termina durante o existente" do
         let(:novo) do
           build(:calendar_block,
             therapist: therapist,
@@ -105,7 +105,7 @@ RSpec.describe CalendarBlock, type: :model do
         end
       end
 
-      context "when novo bloco engloba completamente o existente" do
+      context "quando novo bloco engloba completamente o existente" do
         let(:novo) do
           build(:calendar_block,
             therapist: therapist,
@@ -119,7 +119,7 @@ RSpec.describe CalendarBlock, type: :model do
         end
       end
 
-      context "when o bloco sobreposto pertence a outra terapeuta" do
+      context "quando o bloco sobreposto pertence a outra terapeuta" do
         let(:novo) do
           build(:calendar_block,
             therapist: create(:user, :therapist),
@@ -132,7 +132,7 @@ RSpec.describe CalendarBlock, type: :model do
         end
       end
 
-      context "when novo bloco começa exatamente quando o existente termina" do
+      context "quando novo bloco começa exatamente quando o existente termina" do
         let(:novo) do
           build(:calendar_block,
             therapist: therapist,
@@ -145,7 +145,7 @@ RSpec.describe CalendarBlock, type: :model do
         end
       end
 
-      context "when novo bloco termina exatamente quando o existente começa" do
+      context "quando novo bloco termina exatamente quando o existente começa" do
         let(:novo) do
           build(:calendar_block,
             therapist: therapist,
@@ -158,7 +158,7 @@ RSpec.describe CalendarBlock, type: :model do
         end
       end
 
-      context "when novo bloco está em período sem sobreposição" do
+      context "quando novo bloco está em período sem sobreposição" do
         let(:novo) do
           build(:calendar_block,
             therapist: therapist,
@@ -171,7 +171,7 @@ RSpec.describe CalendarBlock, type: :model do
         end
       end
 
-      context "when atualizando o próprio bloco (sem conflito consigo mesmo)" do
+      context "quando atualizando o próprio bloco (sem conflito consigo mesmo)" do
         it "é válido ao atualizar reason mantendo horário" do
           existente.reason = "Férias atualizadas"
           expect(existente).to be_valid
@@ -256,7 +256,7 @@ RSpec.describe CalendarBlock, type: :model do
     before { Current.user = performing_user }
     after  { Current.user = nil }
 
-    context "when CalendarBlock é criado" do
+    context "quando CalendarBlock é criado" do
       it "registra um AuditLog" do
         expect { create(:calendar_block) }.to change(AuditLog, :count).by(1)
       end

@@ -4,14 +4,14 @@ RSpec.describe "Clients::Dashboard", type: :request do
   let(:parsed_response) { JSON.parse(response.body).deep_symbolize_keys }
 
   describe "GET /clients/dashboard" do
-    context "when not authenticated" do
-      it "returns a 401 unauthorized status" do
+    context "quando não autenticado" do
+      it "retorna 401 não autorizado" do
         get clients_dashboard_path, as: :json
         expect(response).to have_http_status(:unauthorized)
       end
     end
 
-    context "when authenticated" do
+    context "quando autenticado" do
       let(:therapist) { create(:user, :therapist) }
       let(:user) { create(:user, :client, therapist: therapist) }
 
@@ -19,20 +19,20 @@ RSpec.describe "Clients::Dashboard", type: :request do
         sign_in user
       end
 
-      context "when user is not a client" do
+      context "quando o usuário não é um cliente" do
         let(:user) { create(:user, :therapist) }
 
-        it "returns 403 forbidden with an error message" do
+        it "retorna 403 proibido com mensagem de erro" do
           get clients_dashboard_path, as: :json
           expect(response).to have_http_status(:forbidden)
           expect(parsed_response[:error]).to eq("Acesso restrito a clientes.")
         end
       end
 
-      context "when user needs a password change" do
+      context "quando o usuário precisa trocar a senha" do
         let(:user) { create(:user, :client, :must_change_password) }
 
-        it "blocks access" do
+        it "bloqueia o acesso" do
           get clients_dashboard_path, as: :json
           expect(response).to have_http_status(:forbidden)
           expect(parsed_response[:must_change_password]).to eq(true)
@@ -40,13 +40,13 @@ RSpec.describe "Clients::Dashboard", type: :request do
         end
       end
 
-      context "when user is a valid client" do
+      context "quando o usuário é um cliente válido" do
         let(:completed_session) { create(:session, :completed, user: user) }
         let(:absent_session) { create(:session, :absent, user: user) }
         let(:scheduled_session) { create(:session, status: :scheduled, scheduled_at: 1.day.from_now, user: user) }
         let(:newer_note) { create(:patient_note, user: user, created_at: 1.day.ago) }
 
-        context "with a fully populated dashboard" do
+        context "com o dashboard totalmente preenchido" do
           before do
             completed_session
             absent_session
@@ -55,7 +55,7 @@ RSpec.describe "Clients::Dashboard", type: :request do
             newer_note
           end
 
-          it "returns status 200 and the complete dashboard JSON payload" do
+          it "retorna 200 com o payload JSON completo do dashboard" do
             get clients_dashboard_path, as: :json
 
             expect(response).to have_http_status(:ok)
@@ -69,27 +69,27 @@ RSpec.describe "Clients::Dashboard", type: :request do
           end
         end
 
-        context "when there are multiple future scheduled sessions" do
+        context "quando há várias sessões futuras agendadas" do
           let!(:earlier_session) { create(:session, status: :scheduled, scheduled_at: 1.day.from_now, user: user) }
           let!(:later_session) { create(:session, :extra, status: :scheduled, scheduled_at: 2.days.from_now, user: user) }
 
-          it "returns the earliest one as next_session" do
+          it "retorna a mais próxima como next_session" do
             get clients_dashboard_path, as: :json
             expect(parsed_response[:next_session][:id]).to eq(earlier_session.id)
           end
         end
 
-        context "when the user has no future scheduled sessions" do
-          it "returns nil for next_session" do
+        context "quando o usuário não tem sessões futuras agendadas" do
+          it "retorna nil em next_session" do
             get clients_dashboard_path, as: :json
             expect(parsed_response[:next_session]).to be_nil
           end
         end
 
-        context "when the only scheduled session is in the past" do
+        context "quando a única sessão agendada está no passado" do
           let!(:past_scheduled_session) { create(:session, status: :scheduled, scheduled_at: 1.day.ago, user: user) }
 
-          it "returns nil for next_session" do
+          it "retorna nil em next_session" do
             get clients_dashboard_path, as: :json
             expect(parsed_response[:next_session]).to be_nil
           end

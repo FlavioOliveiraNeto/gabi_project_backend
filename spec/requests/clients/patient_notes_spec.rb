@@ -6,19 +6,19 @@ RSpec.describe "Clients::PatientNotes", type: :request do
     json.is_a?(Array) ? json.map(&:deep_symbolize_keys) : json.deep_symbolize_keys
   end
 
-  shared_examples "requires authentication" do |method, path_helper|
-    it "returns a 401 unauthorized status" do
+  shared_examples "exige autenticação" do |method, path_helper|
+    it "retorna 401 não autorizado" do
       send(method, send(path_helper, id: 'dummy_id'), as: :json)
       expect(response).to have_http_status(:unauthorized)
     end
   end
 
   describe "GET /clients/patient_notes" do
-    context "when not authenticated" do
-      it_behaves_like "requires authentication", :get, :clients_patient_notes_path
+    context "quando não autenticado" do
+      it_behaves_like "exige autenticação", :get, :clients_patient_notes_path
     end
 
-    context "when authenticated" do
+    context "quando autenticado" do
       let(:therapist) { create(:user, :therapist) }
       let(:user) { create(:user, :client, therapist: therapist) }
 
@@ -26,10 +26,10 @@ RSpec.describe "Clients::PatientNotes", type: :request do
         sign_in user
       end
 
-      context "when user is a therapist" do
+      context "quando o usuário é uma terapeuta" do
         let(:user) { create(:user, :therapist) }
 
-        it "returns 403 forbidden with correct error message" do
+        it "retorna 403 proibido com a mensagem de erro correta" do
           get clients_patient_notes_path, as: :json
 
           expect(response).to have_http_status(:forbidden)
@@ -37,10 +37,10 @@ RSpec.describe "Clients::PatientNotes", type: :request do
         end
       end
 
-      context "when user needs a password change" do
+      context "quando o usuário precisa trocar a senha" do
         let(:user) { create(:user, :client, :must_change_password) }
 
-        it "blocks access" do
+        it "bloqueia o acesso" do
           get clients_patient_notes_path, as: :json
 
           expect(response).to have_http_status(:forbidden)
@@ -49,8 +49,8 @@ RSpec.describe "Clients::PatientNotes", type: :request do
         end
       end
 
-      context "when there are no notes" do
-        it "returns 200 with an empty list" do
+      context "quando não há anotações" do
+        it "retorna 200 com uma lista vazia" do
           get clients_patient_notes_path, as: :json
 
           expect(response).to have_http_status(:ok)
@@ -58,11 +58,11 @@ RSpec.describe "Clients::PatientNotes", type: :request do
         end
       end
 
-      context "when there are notes" do
+      context "quando há anotações" do
         let!(:note1) { create(:patient_note, user: user) }
         let!(:note2) { create(:patient_note, user: user) }
 
-        it "returns all patient notes belonging to the client" do
+        it "retorna todas as anotações pertencentes ao cliente" do
           get clients_patient_notes_path, as: :json
 
           expect(response).to have_http_status(:ok)
@@ -70,11 +70,11 @@ RSpec.describe "Clients::PatientNotes", type: :request do
           expect(ids).to contain_exactly(note1.id, note2.id)
         end
 
-        context "when verifying data isolation" do
+        context "quando se verifica o isolamento dos dados" do
           let(:other_client) { create(:user, :client, therapist: therapist) }
           let!(:other_note)  { create(:patient_note, user: other_client) }
 
-          it "does not return notes from other clients" do
+          it "não retorna anotações de outros clientes" do
             get clients_patient_notes_path, as: :json
 
             ids = parsed_response.map { |n| n[:id] }
@@ -90,11 +90,11 @@ RSpec.describe "Clients::PatientNotes", type: :request do
     let(:valid_params) { { content: "Minha anotação sobre a sessão de hoje." } }
     let(:invalid_params) { { content: "" } }
 
-    context "when not authenticated" do
-      it_behaves_like "requires authentication", :post, :clients_patient_notes_path
+    context "quando não autenticado" do
+      it_behaves_like "exige autenticação", :post, :clients_patient_notes_path
     end
 
-    context "when authenticated" do
+    context "quando autenticado" do
       let(:therapist) { create(:user, :therapist) }
       let(:user) { create(:user, :client, therapist: therapist) }
 
@@ -102,10 +102,10 @@ RSpec.describe "Clients::PatientNotes", type: :request do
         sign_in user
       end
 
-      context "when user needs a password change" do
+      context "quando o usuário precisa trocar a senha" do
         let(:user) { create(:user, :client, :must_change_password) }
 
-        it "blocks access" do
+        it "bloqueia o acesso" do
           post clients_patient_notes_path, params: valid_params, as: :json
 
           expect(response).to have_http_status(:forbidden)
@@ -114,8 +114,8 @@ RSpec.describe "Clients::PatientNotes", type: :request do
         end
       end
 
-      context "with valid data" do
-        it "creates a note and returns 201" do
+      context "com dados válidos" do
+        it "cria a anotação e retorna 201" do
           expect {
             post clients_patient_notes_path, params: valid_params, as: :json
           }.to change(PatientNote, :count).by(1)
@@ -127,8 +127,8 @@ RSpec.describe "Clients::PatientNotes", type: :request do
         end
       end
 
-      context "with empty content" do
-        it "returns 422 unprocessable entity" do
+      context "com conteúdo vazio" do
+        it "retorna 422 entidade não processável" do
           post clients_patient_notes_path, params: invalid_params, as: :json
 
           expect(response).to have_http_status(:unprocessable_entity)
@@ -143,22 +143,22 @@ RSpec.describe "Clients::PatientNotes", type: :request do
     let(:user) { create(:user, :client, therapist: therapist) }
     let(:note) { create(:patient_note, user: user, content: "Conteúdo original") }
 
-    context "when not authenticated" do
-      it "returns a 401 unauthorized status" do
+    context "quando não autenticado" do
+      it "retorna 401 não autorizado" do
         patch clients_patient_note_path(note), params: { content: "X" }, as: :json
         expect(response).to have_http_status(:unauthorized)
       end
     end
 
-    context "when authenticated" do
+    context "quando autenticado" do
       before do
         sign_in user
       end
 
-      context "when user needs a password change" do
+      context "quando o usuário precisa trocar a senha" do
         let(:user) { create(:user, :client, :must_change_password) }
 
-        it "blocks access" do
+        it "bloqueia o acesso" do
           patch clients_patient_note_path(note), params: { content: "Tentativa" }, as: :json
 
           expect(response).to have_http_status(:forbidden)
@@ -167,8 +167,8 @@ RSpec.describe "Clients::PatientNotes", type: :request do
         end
       end
 
-      context "updating own note" do
-        it "returns 200 with updated note" do
+      context "ao atualizar a própria anotação" do
+        it "retorna 200 com a anotação atualizada" do
           patch clients_patient_note_path(note), params: { content: "Conteúdo atualizado" }, as: :json
 
           expect(response).to have_http_status(:ok)
@@ -176,8 +176,8 @@ RSpec.describe "Clients::PatientNotes", type: :request do
         end
       end
 
-      context "with invalid content" do
-        it "returns 422" do
+      context "com conteúdo inválido" do
+        it "retorna 422" do
           patch clients_patient_note_path(note), params: { content: "" }, as: :json
 
           expect(response).to have_http_status(:unprocessable_entity)
@@ -185,11 +185,11 @@ RSpec.describe "Clients::PatientNotes", type: :request do
         end
       end
 
-      context "attempting to update another client's note (IDOR)" do
+      context "ao tentar atualizar a anotação de outro cliente (IDOR)" do
         let(:other_client) { create(:user, :client) }
         let(:other_note) { create(:patient_note, user: other_client) }
 
-        it "returns 404 Not Found" do
+        it "retorna 404 não encontrado" do
           patch clients_patient_note_path(other_note), params: { content: "Hack attempt" }, as: :json
 
           expect(response).to have_http_status(:not_found)
@@ -203,22 +203,22 @@ RSpec.describe "Clients::PatientNotes", type: :request do
     let(:user) { create(:user, :client, therapist: therapist) }
     let(:note) { create(:patient_note, user: user) }
 
-    context "when not authenticated" do
-      it "returns a 401 unauthorized status" do
+    context "quando não autenticado" do
+      it "retorna 401 não autorizado" do
         delete clients_patient_note_path(note), as: :json
         expect(response).to have_http_status(:unauthorized)
       end
     end
 
-    context "when authenticated" do
+    context "quando autenticado" do
       before do
         sign_in user
       end
 
-      context "when user needs a password change" do
+      context "quando o usuário precisa trocar a senha" do
         let(:user) { create(:user, :client, :must_change_password) }
 
-        it "blocks access" do
+        it "bloqueia o acesso" do
           delete clients_patient_note_path(note), as: :json
 
           expect(response).to have_http_status(:forbidden)
@@ -227,8 +227,8 @@ RSpec.describe "Clients::PatientNotes", type: :request do
         end
       end
 
-      context "deleting own note" do
-        it "deletes the note and returns 204" do
+      context "ao excluir a própria anotação" do
+        it "exclui a anotação e retorna 204" do
           note
 
           expect {
@@ -239,11 +239,11 @@ RSpec.describe "Clients::PatientNotes", type: :request do
         end
       end
 
-      context "attempting to delete another client's note (IDOR)" do
+      context "ao tentar excluir a anotação de outro cliente (IDOR)" do
         let(:other_client) { create(:user, :client) }
         let!(:other_note) { create(:patient_note, user: other_client) }
 
-        it "returns 404 and does not delete the note" do
+        it "retorna 404 e não exclui a anotação" do
           expect {
             delete clients_patient_note_path(other_note), as: :json
           }.not_to change(PatientNote, :count)

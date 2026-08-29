@@ -34,7 +34,7 @@
 #               start_time: existing_session.start_time + 30.minutes,
 #               end_time:   existing_session.end_time   + 30.minutes)
 #       end
-#       it_behaves_like "rejects overlapping session"
+#       it_behaves_like "rejeita sessão sobreposta"
 #     end
 #   end
 #
@@ -53,11 +53,11 @@
 #             start_time: calendar_block.start_time,
 #             end_time:   calendar_block.end_time)
 #     end
-#     it_behaves_like "rejects session overlapping calendar block"
+#     it_behaves_like "rejeita sessão sobreposta a bloqueio de agenda"
 #   end
 # ---------------------------------------------------------------------------
 
-RSpec.shared_examples "rejects overlapping session" do
+RSpec.shared_examples "rejeita sessão sobreposta" do
   it { is_expected.not_to be_valid }
 
   it "inclui mensagem de conflito de agenda nos erros" do
@@ -67,7 +67,7 @@ RSpec.shared_examples "rejects overlapping session" do
   end
 end
 
-RSpec.shared_examples "rejects session overlapping calendar block" do
+RSpec.shared_examples "rejeita sessão sobreposta a bloqueio de agenda" do
   it { is_expected.not_to be_valid }
 
   it "inclui mensagem de bloqueio de calendário nos erros" do
@@ -87,7 +87,7 @@ end
 #   let(:existing_record) { create(factory_name, start_time: base_start, end_time: base_end) }
 # ---------------------------------------------------------------------------
 
-RSpec.shared_examples "validates all overlap patterns" do
+RSpec.shared_examples "valida todos os padrões de sobreposição" do
   # Garante que o registro existente está no banco antes dos testes
   before { existing_record }
 
@@ -98,7 +98,7 @@ RSpec.shared_examples "validates all overlap patterns" do
             end_time:   base_end   + 30.minutes)
     end
 
-    it_behaves_like "rejects overlapping session"
+    it_behaves_like "rejeita sessão sobreposta"
   end
 
   context "quando termina dentro do intervalo existente" do
@@ -108,7 +108,7 @@ RSpec.shared_examples "validates all overlap patterns" do
             end_time:   base_start + 30.minutes)
     end
 
-    it_behaves_like "rejects overlapping session"
+    it_behaves_like "rejeita sessão sobreposta"
   end
 
   context "quando engloba o intervalo existente" do
@@ -118,7 +118,7 @@ RSpec.shared_examples "validates all overlap patterns" do
             end_time:   base_end   + 15.minutes)
     end
 
-    it_behaves_like "rejects overlapping session"
+    it_behaves_like "rejeita sessão sobreposta"
   end
 
   context "quando é idêntico ao intervalo existente" do
@@ -128,7 +128,7 @@ RSpec.shared_examples "validates all overlap patterns" do
             end_time:   base_end)
     end
 
-    it_behaves_like "rejects overlapping session"
+    it_behaves_like "rejeita sessão sobreposta"
   end
 
   context "quando está imediatamente antes (sem sobreposição)" do

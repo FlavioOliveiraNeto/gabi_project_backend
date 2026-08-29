@@ -23,7 +23,7 @@ RSpec.describe ".env.example completeness" do
          .uniq
   end
 
-  it "documents every ENV var the app reads" do
+  it "documenta toda variável de ENV que a aplicação lê" do
     required = referenced_keys - IGNORED_ENV_VARS
     missing  = required - documented_keys
 

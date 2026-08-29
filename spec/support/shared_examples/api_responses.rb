@@ -1,8 +1,8 @@
 # Shared examples para respostas HTTP padrão da API.
 #
 # Convenção de uso:
-#   it_behaves_like "returns unauthorized"
-#   it_behaves_like "returns not found"
+#   it_behaves_like "retorna não autorizado"
+#   it_behaves_like "retorna não encontrado"
 #
 # ATENÇÃO: json_response usa symbolize_names: true.
 # As chaves são símbolos — use :error, :errors, :data (não strings).
@@ -10,7 +10,7 @@
 # Shared examples de autenticação estão em:
 #   spec/support/shared_examples/authenticated_endpoint.rb
 
-RSpec.shared_examples "returns unauthorized" do
+RSpec.shared_examples "retorna não autorizado" do
   it "retorna status 401 Unauthorized" do
     expect(response).to have_http_status(:unauthorized)
   end
@@ -20,7 +20,7 @@ RSpec.shared_examples "returns unauthorized" do
   end
 end
 
-RSpec.shared_examples "returns forbidden" do
+RSpec.shared_examples "retorna proibido" do
   it "retorna status 403 Forbidden" do
     expect(response).to have_http_status(:forbidden)
   end
@@ -30,7 +30,7 @@ RSpec.shared_examples "returns forbidden" do
   end
 end
 
-RSpec.shared_examples "returns not found" do
+RSpec.shared_examples "retorna não encontrado" do
   it "retorna status 404 Not Found" do
     expect(response).to have_http_status(:not_found)
   end
@@ -40,7 +40,7 @@ RSpec.shared_examples "returns not found" do
   end
 end
 
-RSpec.shared_examples "returns unprocessable entity" do
+RSpec.shared_examples "retorna entidade não processável" do
   it "retorna status 422 Unprocessable Entity" do
     expect(response).to have_http_status(:unprocessable_entity)
   end
@@ -50,13 +50,13 @@ RSpec.shared_examples "returns unprocessable entity" do
   end
 end
 
-RSpec.shared_examples "returns success" do
+RSpec.shared_examples "retorna sucesso" do
   it "retorna status 200 OK" do
     expect(response).to have_http_status(:ok)
   end
 end
 
-RSpec.shared_examples "returns created" do
+RSpec.shared_examples "retorna criado" do
   it "retorna status 201 Created" do
     expect(response).to have_http_status(:created)
   end

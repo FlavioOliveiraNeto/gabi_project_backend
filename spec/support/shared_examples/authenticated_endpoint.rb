@@ -14,31 +14,31 @@
 #     let(:therapist)    { create(:user, :therapist) }
 #     let(:make_request) { ->(hdrs) { get url, headers: hdrs } }
 #
-#     it_behaves_like "requires authentication"
-#     it_behaves_like "requires therapist role" do
+#     it_behaves_like "exige autenticação"
+#     it_behaves_like "exige papel de terapeuta" do
 #       let(:patient_user) { create(:user, :patient) }
 #     end
 #
 #     context "autenticado como terapeuta" do
 #       before { make_request.call(therapist_auth_headers(therapist)) }
-#       it_behaves_like "returns success"
+#       it_behaves_like "retorna sucesso"
 #     end
 #   end
 # ---------------------------------------------------------------------------
 
-RSpec.shared_examples "requires authentication" do
+RSpec.shared_examples "exige autenticação" do
   # O spec pai deve definir: let(:make_request) { ->(hdrs) { ... } }
 
   context "sem token de autenticação" do
     before { make_request.call({}) }
 
-    it_behaves_like "returns unauthorized"
+    it_behaves_like "retorna não autorizado"
   end
 
   context "com token sintaticamente inválido" do
     before { make_request.call(invalid_token_headers) }
 
-    it_behaves_like "returns unauthorized"
+    it_behaves_like "retorna não autorizado"
   end
 
   context "com token expirado" do
@@ -46,13 +46,13 @@ RSpec.shared_examples "requires authentication" do
     # passado para it_behaves_like.
     #
     # Exemplo:
-    #   it_behaves_like "requires authentication" do
+    #   it_behaves_like "exige autenticação" do
     #     let(:valid_user) { create(:user, :therapist) }
     #   end
     #
     before { make_request.call(expired_token_headers(valid_user)) }
 
-    it_behaves_like "returns unauthorized"
+    it_behaves_like "retorna não autorizado"
   end
 end
 
@@ -64,15 +64,15 @@ end
 #   let(:patient_user) { create(:user, :patient) }  # usuário com role :patient
 #
 # Exemplo:
-#   it_behaves_like "requires therapist role" do
+#   it_behaves_like "exige papel de terapeuta" do
 #     let(:patient_user) { create(:user, :patient) }
 #   end
 # ---------------------------------------------------------------------------
 
-RSpec.shared_examples "requires therapist role" do
+RSpec.shared_examples "exige papel de terapeuta" do
   context "quando autenticado como paciente" do
     before { make_request.call(patient_auth_headers(patient_user)) }
 
-    it_behaves_like "returns forbidden"
+    it_behaves_like "retorna proibido"
   end
 end

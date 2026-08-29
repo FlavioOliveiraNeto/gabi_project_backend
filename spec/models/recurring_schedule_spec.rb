@@ -1,7 +1,7 @@
 require "rails_helper"
 
 RSpec.describe RecurringSchedule, type: :model do
-  include_context "with São Paulo timezone"
+  include_context "com fuso de São Paulo"
 
   subject(:schedule) { build(:recurring_schedule) }
 
@@ -162,7 +162,7 @@ RSpec.describe RecurringSchedule, type: :model do
     }
 
     nomes.each do |dia, nome|
-      context "when weekday é #{dia}" do
+      context "quando weekday é #{dia}" do
         let(:schedule) { build(:recurring_schedule, weekday: dia) }
 
         it "retorna '#{nome}'" do
@@ -194,7 +194,7 @@ RSpec.describe RecurringSchedule, type: :model do
         status: :completed)
     end
 
-    context "when weekday é alterado" do
+    context "quando weekday é alterado" do
       let(:novo_dia) { (schedule.weekday + 1) % 7 }
 
       before { schedule.update!(weekday: novo_dia) }
@@ -208,7 +208,7 @@ RSpec.describe RecurringSchedule, type: :model do
       end
     end
 
-    context "when start_time é alterado" do
+    context "quando start_time é alterado" do
       before { schedule.update!(start_time: "10:00:00") }
 
       it "remove sessões futuras vinculadas" do
@@ -220,7 +220,7 @@ RSpec.describe RecurringSchedule, type: :model do
       end
     end
 
-    context "when apenas meet_link é alterado" do
+    context "quando apenas meet_link é alterado" do
       before { schedule.update!(meet_link: "https://meet.google.com/novo-link-xyz") }
 
       it "não remove sessões futuras" do
@@ -232,7 +232,7 @@ RSpec.describe RecurringSchedule, type: :model do
       end
     end
 
-    context "when active é alterado para false" do
+    context "quando active é alterado para false" do
       before { schedule.update!(active: false) }
 
       it "remove sessões futuras vinculadas" do
@@ -251,7 +251,7 @@ RSpec.describe RecurringSchedule, type: :model do
     before { Current.user = performing_user }
     after  { Current.user = nil }
 
-    context "when RecurringSchedule é alterada" do
+    context "quando RecurringSchedule é alterada" do
       let(:schedule) { create(:recurring_schedule) }
 
       it "registra um AuditLog" do

@@ -1,4 +1,4 @@
-RSpec.shared_examples "a meet link field" do
+RSpec.shared_examples "um campo de link de reunião" do
   def assign_meet_link(record, attribute, value)
     record.public_send("#{attribute}=", value)
     record

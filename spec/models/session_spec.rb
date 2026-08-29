@@ -1,7 +1,7 @@
 require "rails_helper"
 
 RSpec.describe Session, type: :model do
-  include_context "with São Paulo timezone"
+  include_context "com fuso de São Paulo"
 
   subject(:session) { build(:session) }
 
@@ -91,7 +91,7 @@ RSpec.describe Session, type: :model do
         status: :scheduled)
     end
 
-    context "when nova sessão está exatamente no mesmo horário" do
+    context "quando nova sessão está exatamente no mesmo horário" do
       let(:nova) { build(:session, start_time: base, end_time: base + 50.minutes) }
 
       it "é inválida" do
@@ -100,7 +100,7 @@ RSpec.describe Session, type: :model do
       end
     end
 
-    context "when nova sessão começa durante outra" do
+    context "quando nova sessão começa durante outra" do
       let(:nova) do
         build(:session,
           start_time: base + 20.minutes,
@@ -113,7 +113,7 @@ RSpec.describe Session, type: :model do
       end
     end
 
-    context "when nova sessão termina durante outra" do
+    context "quando nova sessão termina durante outra" do
       let(:nova) do
         build(:session,
           start_time: base - 20.minutes,
@@ -126,7 +126,7 @@ RSpec.describe Session, type: :model do
       end
     end
 
-    context "when nova sessão engloba outra completamente" do
+    context "quando nova sessão engloba outra completamente" do
       let(:nova) do
         build(:session,
           start_time: base - 10.minutes,
@@ -139,30 +139,79 @@ RSpec.describe Session, type: :model do
       end
     end
 
-    context "when nova sessão começa exatamente quando outra termina" do
-      it "é válida (sem sobreposição)" do
+    context "quando nova sessão começa exatamente quando outra termina" do
+      it "é inválida (não respeita o intervalo de 10 minutos)" do
         nova = build(:session,
           start_time: base + 50.minutes,
           end_time: base + 50.minutes + 50.minutes)
         nova.validate
-        expect(nova.errors[:start_time]).not_to include(a_string_matching(/conflito/i))
+        expect(nova.errors[:start_time]).to be_present
       end
     end
 
-    context "when nova sessão termina exatamente quando outra começa" do
+    context "quando nova sessão começa dentro do intervalo de 10 minutos" do
+      it "é inválida faltando 1 minuto para o intervalo" do
+        nova = build(:session,
+          start_time: base + 59.minutes,
+          end_time: base + 59.minutes + 50.minutes)
+        nova.validate
+        expect(nova.errors[:start_time]).to be_present
+      end
+
+      it "informa o intervalo na mensagem de erro" do
+        nova = build(:session,
+          start_time: base + 55.minutes,
+          end_time: base + 55.minutes + 50.minutes)
+        nova.validate
+        expect(nova.errors[:start_time].join).to match(/intervalo|10 minutos/i)
+      end
+    end
+
+    context "quando nova sessão respeita o intervalo de 10 minutos depois" do
+      it "é válida começando 60 minutos após o início da anterior" do
+        nova = build(:session,
+          start_time: base + 60.minutes,
+          end_time: base + 60.minutes + 50.minutes)
+        nova.validate
+        expect(nova.errors[:start_time]).not_to include(a_string_matching(/conflito|intervalo/i))
+      end
+    end
+
+    context "quando nova sessão termina exatamente quando outra começa" do
       let(:nova) do
         build(:session,
           start_time: base - 50.minutes,
           end_time: base)
       end
 
-      it "é válida (sem sobreposição)" do
+      it "é inválida (não respeita o intervalo de 10 minutos)" do
         nova.validate
-        expect(nova.errors[:start_time]).not_to include(a_string_matching(/conflito/i))
+        expect(nova.errors[:start_time]).to be_present
       end
     end
 
-    context "when sessões são em dias diferentes" do
+    context "quando nova sessão respeita o intervalo de 10 minutos antes" do
+      it "é válida terminando 10 minutos antes da próxima" do
+        nova = build(:session,
+          start_time: base - 60.minutes,
+          end_time: base - 10.minutes)
+        nova.validate
+        expect(nova.errors[:start_time]).not_to include(a_string_matching(/conflito|intervalo/i))
+      end
+    end
+
+    context "quando a sessão vizinha está cancelada" do
+      it "é válida encostada nela (cancelada não reserva intervalo)" do
+        existente.update_column(:status, Session.statuses[:cancelled])
+        nova = build(:session,
+          start_time: base + 50.minutes,
+          end_time: base + 50.minutes + 50.minutes)
+        nova.validate
+        expect(nova.errors[:start_time]).not_to include(a_string_matching(/conflito|intervalo/i))
+      end
+    end
+
+    context "quando sessões são em dias diferentes" do
       let(:nova) do
         build(:session,
           start_time: base + 1.day,
@@ -174,7 +223,7 @@ RSpec.describe Session, type: :model do
       end
     end
 
-    context "when sessão existente está cancelada" do
+    context "quando sessão existente está cancelada" do
       let!(:cancelada) do
         create(:session,
           start_time: base + 2.hours,
@@ -207,7 +256,7 @@ RSpec.describe Session, type: :model do
         reason: "Consulta médica")
     end
 
-    context "when sessão está completamente dentro do bloqueio" do
+    context "quando sessão está completamente dentro do bloqueio" do
       let(:sessao) do
         build(:session,
           user: client,
@@ -221,7 +270,7 @@ RSpec.describe Session, type: :model do
       end
     end
 
-    context "when sessão sobrepõe parcialmente o início do bloqueio" do
+    context "quando sessão sobrepõe parcialmente o início do bloqueio" do
       let(:sessao) do
         build(:session,
           user: client,
@@ -235,7 +284,7 @@ RSpec.describe Session, type: :model do
       end
     end
 
-    context "when sessão sobrepõe parcialmente o fim do bloqueio" do
+    context "quando sessão sobrepõe parcialmente o fim do bloqueio" do
       let(:sessao) do
         build(:session,
           user: client,
@@ -249,7 +298,7 @@ RSpec.describe Session, type: :model do
       end
     end
 
-    context "when o bloqueio pertence a outra terapeuta" do
+    context "quando o bloqueio pertence a outra terapeuta" do
       let(:sessao) do
         build(:session,
           user: create(:user, :client, therapist: create(:user, :therapist)),
@@ -262,7 +311,7 @@ RSpec.describe Session, type: :model do
       end
     end
 
-    context "when sessão está fora do bloqueio" do
+    context "quando sessão está fora do bloqueio" do
       let(:sessao) do
         build(:session,
           user: client,
@@ -275,7 +324,7 @@ RSpec.describe Session, type: :model do
       end
     end
 
-    context "when sessão começa exatamente quando o bloqueio termina" do
+    context "quando sessão começa exatamente quando o bloqueio termina" do
       let(:sessao) do
         build(:session,
           user: client,
@@ -604,7 +653,7 @@ RSpec.describe Session, type: :model do
     before { Current.user = performing_user }
     after  { Current.user = nil }
 
-    context "when sessão é criada" do
+    context "quando sessão é criada" do
       it "registra um AuditLog" do
         expect { create(:session) }.to change(AuditLog, :count).by(1)
       end
@@ -618,7 +667,7 @@ RSpec.describe Session, type: :model do
       end
     end
 
-    context "when sessão é cancelada" do
+    context "quando sessão é cancelada" do
       let!(:sessao) { create(:session, status: :scheduled) }
 
       it "registra um AuditLog" do
@@ -634,7 +683,7 @@ RSpec.describe Session, type: :model do
       end
     end
 
-    context "when sessão é marcada como falta" do
+    context "quando sessão é marcada como falta" do
       let!(:sessao) { create(:session, :past, status: :completed) }
 
       it "registra um AuditLog" do

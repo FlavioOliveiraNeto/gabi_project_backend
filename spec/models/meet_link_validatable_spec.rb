@@ -2,7 +2,7 @@ require 'rails_helper'
 
 RSpec.describe MeetLinkValidatable, type: :model do
   describe "User#google_meet_link" do
-    it_behaves_like "a meet link field" do
+    it_behaves_like "um campo de link de reunião" do
       subject(:record) { build(:user, :client) }
 
       let(:meet_link_attribute) { :google_meet_link }
@@ -10,7 +10,7 @@ RSpec.describe MeetLinkValidatable, type: :model do
   end
 
   describe "RecurringSchedule#meet_link" do
-    it_behaves_like "a meet link field" do
+    it_behaves_like "um campo de link de reunião" do
       subject(:record) { build(:recurring_schedule) }
 
       let(:meet_link_attribute) { :meet_link }
@@ -18,7 +18,7 @@ RSpec.describe MeetLinkValidatable, type: :model do
   end
 
   describe "Session#meet_link" do
-    it_behaves_like "a meet link field" do
+    it_behaves_like "um campo de link de reunião" do
       subject(:record) { build(:session) }
 
       let(:meet_link_attribute) { :meet_link }
