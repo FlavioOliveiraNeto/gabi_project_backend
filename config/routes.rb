@@ -41,5 +41,7 @@ Rails.application.routes.draw do
     resources :sessions, only: %i[create update destroy]
 
     resources :calendar_blocks, only: %i[index show create update destroy]
+
+    resource :transcription, only: %i[create]
   end
 end

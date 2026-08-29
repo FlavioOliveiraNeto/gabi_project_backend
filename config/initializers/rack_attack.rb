@@ -61,6 +61,11 @@ class Rack::Attack
     req.ip if PASSWORD_WRITE_PATHS.include?(req.path) && !req.get?
   end
 
+  # ponytail: paid per-minute API — cap it before someone burns the credits.
+  throttle("transcription/ip", limit: 30, period: 1.hour) do |req|
+    req.ip if req.path == "/therapists/transcription" && req.post?
+  end
+
   throttle("req/ip", limit: 300, period: 5.minutes) do |req|
     req.ip unless req.path == "/up"
   end
