@@ -2,10 +2,14 @@ RSpec.describe "Configuração dos jobs em background" do
   backend_root = Pathname.new(File.expand_path("../..", __dir__))
   repo_root    = backend_root.parent
 
-  def compose_backend_env(path)
-    return nil unless path.exist?
+  def compose(path)
+    skip "#{path.basename} não montado neste contexto" unless path.exist?
 
-    content = path.read
+    path.read
+  end
+
+  def compose_backend_env(path)
+    content = compose(path)
     content[/^\s{2}backend:.*?(?=^\s{2}\w|\z)/m].to_s
   end
 
@@ -18,20 +22,20 @@ RSpec.describe "Configuração dos jobs em background" do
   end
 
   it "produção declara um serviço worker dedicado" do
-    expect(prod_compose.read).to match(/^\s{2}worker:$/),
+    expect(compose(prod_compose)).to match(/^\s{2}worker:$/),
       "docker-compose.prod.yml não declara o serviço `worker`. Sem ele (e sem " \
       "SOLID_QUEUE_IN_PUMA no backend) NENHUM job roda em produção, " \
       "silenciosamente. Verifique com `bin/rails jobs:health`."
   end
 
   it "o worker de produção executa bin/jobs" do
-    worker = prod_compose.read[/^\s{2}worker:.*?(?=^\s{2}\w|\z)/m].to_s
+    worker = compose(prod_compose)[/^\s{2}worker:.*?(?=^\s{2}\w|\z)/m].to_s
 
     expect(worker).to match(%r{bin/jobs})
   end
 
   it "o worker espera o backend ficar saudável (migrations prontas)" do
-    worker = prod_compose.read[/^\s{2}worker:.*?(?=^\s{2}\w|\z)/m].to_s
+    worker = compose(prod_compose)[/^\s{2}worker:.*?(?=^\s{2}\w|\z)/m].to_s
 
     expect(worker).to include("backend:")
     expect(worker).to include("service_healthy")
