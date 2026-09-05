@@ -1,0 +1,11 @@
+[build]
+builder = "dockerfile"
+dockerfilePath = "Dockerfile"
+
+[deploy]
+# Sem thruster: TLS/compressão ficam na borda do Railway e o Puma escuta em $PORT.
+# O ENTRYPOINT do Dockerfile continua valendo, então o db:prepare ainda roda.
+startCommand = "bin/rails server -b 0.0.0.0"
+healthcheckPath = "/up"
+healthcheckTimeout = 120
+restartPolicyType = "ON_FAILURE"

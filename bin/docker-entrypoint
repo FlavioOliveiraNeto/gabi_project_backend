@@ -5,7 +5,10 @@ echo "🚀 Docker entrypoint iniciado"
 
 if [ "$1" = "bin/rails" ] && [ "$2" = "server" ]; then
   echo "⏳ Aguardando Postgres..."
-  until pg_isready -h db -p 5432; do
+  # ponytail: com DATABASE_URL (Railway) o pg_isready lê host/porta dela;
+  # sem ela, cai no host `db` do docker-compose.
+  if [ -n "$DATABASE_URL" ]; then wait_args=(-d "$DATABASE_URL"); else wait_args=(-h db -p 5432); fi
+  until pg_isready "${wait_args[@]}"; do
     sleep 2
   done
 

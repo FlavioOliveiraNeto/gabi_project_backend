@@ -39,6 +39,6 @@ test:
 production:
   primary:
     <<: *default
-    database: gabi_project_backend_production
-    username: gabi_project_backend
-    password: <%= ENV["GABI_PROJECT_BACKEND_DATABASE_PASSWORD"] %>
+    # Railway injeta DATABASE_URL do plugin Postgres. Host/porta/usuário/senha
+    # vêm todos dela — não duplicar aqui.
+    url: <%= ENV["DATABASE_URL"] %>
