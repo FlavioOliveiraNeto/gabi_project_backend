@@ -4,10 +4,11 @@ dockerfilePath = "Dockerfile"
 
 [deploy]
 # Sem thruster: TLS/compressão ficam na borda do Railway e o Puma escuta em $PORT.
-# db:prepare explícito: o Railway invoca o start command via shell, então o
-# `if [ "$1" = "bin/rails" ]` do bin/docker-entrypoint não casa e o prepare dele
+# Migrations fora do start: o `if [ "$1" = "bin/rails" ]` do bin/docker-entrypoint
+# não casa com a forma como o Railway invoca o comando, então o db:prepare dele
 # nunca roda. Sem as tabelas do SolidQueue o Puma sobe e morre em seguida.
-startCommand = "bin/rails db:prepare && bin/rails server -b 0.0.0.0"
+preDeployCommand = "bin/rails db:prepare"
+startCommand = "bin/rails server -b 0.0.0.0"
 healthcheckPath = "/up"
 healthcheckTimeout = 120
 restartPolicyType = "ON_FAILURE"
