@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_29_000005) do
+ActiveRecord::Schema[8.1].define(version: 2026_09_14_000001) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -83,6 +83,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_29_000005) do
     t.datetime "created_at", null: false
     t.datetime "end_time", null: false
     t.string "meet_link"
+    t.boolean "paid", default: false, null: false
     t.bigint "recurring_schedule_id"
     t.datetime "scheduled_at"
     t.integer "session_type", default: 0, null: false

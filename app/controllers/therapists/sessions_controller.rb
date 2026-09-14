@@ -40,6 +40,23 @@ class Therapists::SessionsController < ApplicationController
     render json: { error: "Transição inválida: de '#{session.status}' para '#{new_status}'." }, status: :unprocessable_entity
   end
 
+  # Marca/desmarca pagamento de uma ou de várias sessões de uma vez.
+  def mark_paid
+    ids  = Array(params[:ids]).map(&:to_i)
+    paid = params.key?(:paid) ? ActiveModel::Type::Boolean.new.cast(params[:paid]) : true
+
+    sessions = Session.joins(:user).where(users: { therapist_id: current_user.id }, id: ids).to_a
+
+    if sessions.empty?
+      return render json: { error: "Nenhuma sessão encontrada." }, status: :not_found
+    end
+
+    # update_all: pagamento não passa pelas transições de status da sessão.
+    Session.where(id: sessions.map(&:id)).update_all(paid: paid, updated_at: Time.current)
+
+    render json: Session.where(id: sessions.map(&:id)).includes(:user).map { |s| session_json(s) }
+  end
+
   def destroy
     session = client_session(params[:id])
     session.destroy!
@@ -68,6 +85,7 @@ class Therapists::SessionsController < ApplicationController
       end_time:     session.end_time&.iso8601,
       status:       session.status,
       session_type: session.session_type,
+      paid:         session.paid,
       meet_link:    session.meet_link,
       client: {
         id:    session.user.id,

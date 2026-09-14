@@ -120,6 +120,7 @@ class Therapists::DashboardController < ApplicationController
         time: local_time.strftime("%H:%M"),
         status: s.status,
         session_type: s.session_type,
+        paid: s.paid,
         patient: {
           id: s.user.id,
           name: s.user.name,

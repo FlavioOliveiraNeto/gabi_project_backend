@@ -38,7 +38,11 @@ Rails.application.routes.draw do
                 param: :id
     end
 
-    resources :sessions, only: %i[create update destroy]
+    resources :sessions, only: %i[create update destroy] do
+      collection do
+        patch :mark_paid
+      end
+    end
 
     resources :calendar_blocks, only: %i[index show create update destroy]
 

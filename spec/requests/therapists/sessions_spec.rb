@@ -337,4 +337,39 @@ RSpec.describe "Therapists::Sessions", type: :request do
       end
     end
   end
+
+  describe "PATCH /therapists/sessions/mark_paid" do
+    let!(:s1) { create(:session, user: patient, start_time: 3.days.from_now.change(hour: 9), end_time: 3.days.from_now.change(hour: 9, min: 50)) }
+    let!(:s2) { create(:session, user: patient, start_time: 4.days.from_now.change(hour: 9), end_time: 4.days.from_now.change(hour: 9, min: 50)) }
+
+    it "marca várias sessões como pagas" do
+      patch mark_paid_therapists_sessions_path,
+            params: { ids: [ s1.id, s2.id ], paid: true }, headers: headers, as: :json
+
+      expect(response).to have_http_status(:ok)
+      expect(json_response.map { |x| x[:paid] }).to all(be true)
+      expect(s1.reload.paid).to be true
+      expect(s2.reload.paid).to be true
+    end
+
+    it "desmarca uma sessão" do
+      s1.update_column(:paid, true)
+
+      patch mark_paid_therapists_sessions_path,
+            params: { ids: [ s1.id ], paid: false }, headers: headers, as: :json
+
+      expect(response).to have_http_status(:ok)
+      expect(s1.reload.paid).to be false
+    end
+
+    it "não alcança sessão de outra terapeuta" do
+      other = create(:session, user: create(:user, :client, therapist: create(:user, :therapist)))
+
+      patch mark_paid_therapists_sessions_path,
+            params: { ids: [ other.id ], paid: true }, headers: headers, as: :json
+
+      expect(response).to have_http_status(:not_found)
+      expect(other.reload.paid).to be false
+    end
+  end
 end
