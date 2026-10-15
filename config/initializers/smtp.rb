@@ -1,4 +1,6 @@
-if ENV["SMTP_ADDRESS"].present?
+# Testes nunca usam SMTP real: o .env do docker-compose também é carregado com
+# RAILS_ENV=test, e sem esta guarda a suíte enviava e-mail de verdade pelo Gmail.
+if ENV["SMTP_ADDRESS"].present? && !Rails.env.test?
   Rails.application.config.action_mailer.delivery_method = :smtp
   Rails.application.config.action_mailer.perform_deliveries = true
   Rails.application.config.action_mailer.raise_delivery_errors = true

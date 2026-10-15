@@ -48,7 +48,7 @@ class Users::PasswordsController < ApplicationController
     payload, = JWT.decode(token, jwt_secret, true, algorithms: [ "HS256" ])
     return unless payload["jti"].present?
 
-    JwtDenylist.revoke_jwt(payload, current_user)
+    JwtRevocation.revoke_jwt(payload, current_user)
   rescue JWT::DecodeError
     Rails.logger.error "Erro de decode do JWT."
   end

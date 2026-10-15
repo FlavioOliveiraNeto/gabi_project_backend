@@ -94,8 +94,7 @@ class ApplicationController < ActionController::Base
     token = auth_token
     return nil unless token.present?
 
-    payload, = JWT.decode(token, nil, false)
-    hmac_csrf(payload["sub"], payload["jti"])
+    hmac_csrf(*decode_jwt(token).values_at("sub", "jti"))
   rescue JWT::DecodeError
     nil
   end
@@ -107,10 +106,15 @@ class ApplicationController < ActionController::Base
                 request.cookies["auth_token"]
     return nil unless raw_token.present?
 
-    payload, = JWT.decode(raw_token, nil, false)
-    hmac_csrf(current_user.id, payload["jti"])
+    hmac_csrf(current_user.id, decode_jwt(raw_token)["jti"])
   rescue JWT::DecodeError
     nil
+  end
+
+  # Assinatura verificada; expiração não — um token expirado precisa chegar ao
+  # authenticate_user! e virar 401 (o front redireciona ao login), não 403 de CSRF.
+  def decode_jwt(token)
+    JWT.decode(token, jwt_secret, true, algorithms: [ "HS256" ], verify_expiration: false).first
   end
 
   def hmac_csrf(user_id, jti)

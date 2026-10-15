@@ -18,6 +18,10 @@ Devise.setup do |config|
 
   config.reset_password_within = 6.hours
 
+  # Avisa o dono da conta quando a senha muda (troca ou reset): sem isso um
+  # takeover passa despercebido.
+  config.send_password_change_notification = true
+
   config.lock_strategy = :failed_attempts
   config.maximum_attempts = 10
 

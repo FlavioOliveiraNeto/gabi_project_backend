@@ -1,6 +1,4 @@
-class Therapists::PatientsController < ApplicationController
-  before_action :authenticate_user!
-  before_action :ensure_therapist!
+class Therapists::PatientsController < Therapists::BaseController
   before_action :set_patient, only: %i[show update destroy update_schedule]
 
   def index
@@ -113,11 +111,6 @@ class Therapists::PatientsController < ApplicationController
     }
   end
 
-  def ensure_therapist!
-    return if current_user.therapist?
-
-    render json: { error: "Acesso restrito." }, status: :forbidden
-  end
 
   def set_patient
     @patient = current_user.patients

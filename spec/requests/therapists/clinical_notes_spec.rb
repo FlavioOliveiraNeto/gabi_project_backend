@@ -99,6 +99,17 @@ RSpec.describe "Therapists::ClinicalNotes", type: :request do
       end
     end
 
+    context "quando o índice único barra uma nota duplicada (corrida)" do
+      it "retorna 422 com mensagem da nota, não de horário" do
+        allow_any_instance_of(ClinicalNote).to receive(:save).and_raise(ActiveRecord::RecordNotUnique)
+
+        post "/therapists/patients/#{patient.id}/notes", params: valid_params, headers: headers, as: :json
+
+        expect(response).to have_http_status(:unprocessable_content)
+        expect(json_body["errors"].first).to match(/anotação clínica/)
+      end
+    end
+
     context "com conteúdo vazio" do
       it "retorna 422 com erros de validação" do
         post "/therapists/patients/#{patient.id}/notes",

@@ -3,7 +3,10 @@ require "rails_helper"
 RSpec.describe "Therapists::Transcriptions", type: :request do
   include_context "autenticado como terapeuta"
 
-  let(:audio) { Rack::Test::UploadedFile.new(StringIO.new("fake-audio"), "audio/m4a", original_filename: "nota.m4a") }
+  # Cabeçalho mínimo de um m4a real (caixa ftyp M4A): o controller confere os bytes.
+  let(:m4a_bytes) { "\x00\x00\x00\x20ftypM4A \x00\x00\x02\x00M4A isommp42".b + ("\x00" * 16) }
+
+  let(:audio) { Rack::Test::UploadedFile.new(StringIO.new(m4a_bytes), "audio/m4a", original_filename: "nota.m4a") }
 
   def post_audio(file = audio)
     post "/therapists/transcription", params: { audio: file }, headers: headers
@@ -20,6 +23,15 @@ RSpec.describe "Therapists::Transcriptions", type: :request do
 
   it "rejeita formatos não suportados" do
     post_audio(Rack::Test::UploadedFile.new(StringIO.new("x"), "application/pdf", original_filename: "a.pdf"))
+
+    expect(response).to have_http_status(:unprocessable_entity)
+  end
+
+  it "rejeita arquivo que declara áudio mas não é (Content-Type forjado)" do
+    fake = Rack::Test::UploadedFile.new(StringIO.new("%PDF-1.4\n"), "audio/m4a", original_filename: "nota.m4a")
+    expect(TranscriptionService).not_to receive(:call)
+
+    post_audio(fake)
 
     expect(response).to have_http_status(:unprocessable_entity)
   end

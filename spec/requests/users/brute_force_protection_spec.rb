@@ -125,11 +125,16 @@ RSpec.describe "Proteção contra força bruta", type: :request do
 
   describe "rede de segurança global" do
     it "limita requisições autenticadas em volume" do
-      headers = auth_headers(user)
+      # Relógio congelado: o Rack::Attack conta em janelas alinhadas ao relógio
+      # (5 min); se as 302 requisições cruzassem a virada, nenhuma janela
+      # chegaria a 300 e o teste falhava de forma intermitente.
+      freeze_time do
+        headers = auth_headers(user)
 
-      301.times { get clients_dashboard_path, headers: headers }
+        301.times { get clients_dashboard_path, headers: headers }
 
-      expect(response).to have_http_status(:too_many_requests)
+        expect(response).to have_http_status(:too_many_requests)
+      end
     end
 
     it "não limita o health check" do
@@ -150,6 +155,15 @@ RSpec.describe "Proteção contra força bruta", type: :request do
       6.times { attempt_login }
 
       expect(json_body).to include("error")
+    end
+  end
+
+  describe "login CSRF" do
+    it "recusa login fora de JSON (form POST cross-site não tem preflight)" do
+      post user_session_path, params: { user: { email: user.email, password: password } }
+
+      expect(response).to have_http_status(:unsupported_media_type)
+      expect(response.cookies["auth_token"]).to be_blank
     end
   end
 end

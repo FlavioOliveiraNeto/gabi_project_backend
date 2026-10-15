@@ -25,7 +25,7 @@ RSpec.describe "Clients::Dashboard", type: :request do
         it "retorna 403 proibido com mensagem de erro" do
           get clients_dashboard_path, as: :json
           expect(response).to have_http_status(:forbidden)
-          expect(parsed_response[:error]).to eq("Acesso restrito a clientes.")
+          expect(parsed_response[:error]).to eq("Acesso restrito.")
         end
       end
 

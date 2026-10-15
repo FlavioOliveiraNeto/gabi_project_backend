@@ -3,7 +3,15 @@ class Users::SessionsController < Devise::SessionsController
 
   skip_before_action :validate_csrf_token!, only: :create
 
+  # Login é isento de CSRF; exigir JSON força o preflight CORS e impede que um
+  # form de outro site logue a vítima na conta do atacante (login CSRF).
+  before_action :require_json!, only: :create
+
   private
+
+  def require_json!
+    head :unsupported_media_type unless request.media_type == "application/json"
+  end
 
   def verify_signed_out_user
     warden.authenticate(scope: resource_name)
@@ -36,8 +44,7 @@ class Users::SessionsController < Devise::SessionsController
   def derive_login_csrf_token(jwt_token, resource)
     return nil unless jwt_token.present?
 
-    payload, = JWT.decode(jwt_token, nil, false)
-    hmac_csrf(resource.id, payload["jti"])
+    hmac_csrf(resource.id, decode_jwt(jwt_token)["jti"])
   rescue JWT::DecodeError
     nil
   end

@@ -1,7 +1,4 @@
-class Therapists::DashboardController < ApplicationController
-  before_action :authenticate_user!
-  before_action :ensure_therapist!
-
+class Therapists::DashboardController < Therapists::BaseController
   CALENDAR_MONTHS_BACK    = 3
   CALENDAR_MONTHS_FORWARD = 3
 
@@ -26,10 +23,6 @@ class Therapists::DashboardController < ApplicationController
   end
 
   private
-
-  def ensure_therapist!
-    render json: { error: "Acesso restrito." }, status: :forbidden unless current_user.therapist?
-  end
 
   def calendar_window
     from = parse_date(params[:from]) || CALENDAR_MONTHS_BACK.months.ago.beginning_of_month.to_date
