@@ -17,6 +17,18 @@ RSpec.describe User, type: :model do
         expect(user.errors[:name]).to be_present
       end
 
+      it "é inválido com name acima de 120 caracteres" do
+        user.name = "a" * 121
+        expect(user).to be_invalid
+        expect(user.errors[:name]).to be_present
+      end
+
+      it "é inválido com phone acima de 30 caracteres" do
+        user.phone = "9" * 31
+        expect(user).to be_invalid
+        expect(user.errors[:phone]).to be_present
+      end
+
       it "é inválido sem email" do
         user.email = nil
         expect(user).to be_invalid

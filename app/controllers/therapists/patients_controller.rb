@@ -196,7 +196,8 @@ class Therapists::PatientsController < ApplicationController
     scheduled_at = Time.zone.parse("#{params[:single_date]} #{params[:single_time]}")
     return unless scheduled_at
 
-    session.update!(scheduled_at: scheduled_at)
+    # start/end_time precisam acompanhar: as validações de conflito usam eles.
+    session.update!(scheduled_at: scheduled_at, start_time: scheduled_at, end_time: scheduled_at + 50.minutes)
   end
 
   def clinical_notes_counts

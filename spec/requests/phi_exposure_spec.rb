@@ -266,7 +266,8 @@ RSpec.describe "Exposição de PHI e limites de payload", type: :request do
     end
 
     it "continua contando as stats fora da janela do calendário" do
-      slot = Time.zone.now.beginning_of_hour + 1.hour
+      # Hora cheia corrente: sempre "hoje". Com +1h o teste falhava entre 23h e 0h.
+      slot = Time.zone.now.beginning_of_hour
       create(:session, user: patient, scheduled_at: slot,
              start_time: slot, end_time: slot + 50.minutes)
 

@@ -31,6 +31,11 @@ RSpec.describe "Therapists::ClinicalNotes", type: :request do
         ids = json_body.map { |n| n["id"] }
         expect(ids.first).to eq(note2.id)
       end
+
+      it "registra a leitura no AuditLog" do
+        log = AuditLog.find_by(action: "list_clinical_notes")
+        expect(log).to have_attributes(user_id: therapist.id, entity_type: "User", entity_id: patient.id)
+      end
     end
 
     context "tentando acessar paciente de outro terapeuta" do
@@ -170,6 +175,11 @@ RSpec.describe "Therapists::ClinicalNotes", type: :request do
 
       it "retorna os dados da nota" do
         expect(json_body["id"]).to eq(note.id)
+      end
+
+      it "registra a leitura no AuditLog" do
+        log = AuditLog.find_by(action: "read")
+        expect(log).to have_attributes(user_id: therapist.id, entity_type: "ClinicalNote", entity_id: note.id)
       end
     end
 

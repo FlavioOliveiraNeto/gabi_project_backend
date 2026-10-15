@@ -5,7 +5,7 @@ class CalendarBlock < ApplicationRecord
 
   validates :start_time, presence: true
   validates :end_time,   presence: true
-  validates :reason,     presence: true
+  validates :reason,     presence: true, length: { maximum: 500 }
 
   validate :end_time_after_start_time
   validate :no_overlapping_blocks

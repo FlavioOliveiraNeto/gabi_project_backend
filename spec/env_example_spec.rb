@@ -7,7 +7,7 @@ RSpec.describe ".env.example completeness" do
     SECRET_KEY_BASE PORT JOB_CONCURRENCY
     SOLID_QUEUE_IN_PUMA GABI_PROJECT_BACKEND_DATABASE_PASSWORD
     SEED_ALLOW_PRODUCTION SEED_PASSWORD SEED_THERAPIST_EMAIL
-    SECRET_KEY_BASE_DUMMY
+    SECRET_KEY_BASE_DUMMY DATABASE_URL
   ].freeze
 
   let(:env_example) { File.read(root.join(".env.example")) }

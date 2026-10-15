@@ -379,6 +379,28 @@ RSpec.describe "Therapists::Patients", type: :request do
 
         expect(response).to have_http_status(:ok)
         expect(extra_session.reload.scheduled_at.strftime("%H:%M")).to eq("15:00")
+        expect(extra_session.start_time).to eq(extra_session.scheduled_at)
+        expect(extra_session.end_time).to eq(extra_session.scheduled_at + 50.minutes)
+      end
+
+      it "rejeita mover a sessão para um horário já ocupado por outro paciente" do
+        other_patient = create(:user, :client, therapist: therapist)
+        taken_at      = (2.weeks.from_now + 1.day).change(hour: 15)
+        create(:session, user: other_patient, scheduled_at: taken_at)
+        original_start = extra_session.start_time
+
+        put update_schedule_therapists_patient_path(patient),
+            params: {
+              schedule_type: "extra",
+              session_id:    extra_session.id,
+              single_date:   taken_at.to_date.iso8601,
+              single_time:   "15:00"
+            },
+            headers: headers,
+            as: :json
+
+        expect(response).to have_http_status(:unprocessable_content)
+        expect(extra_session.reload.start_time).to eq(original_start)
       end
     end
 

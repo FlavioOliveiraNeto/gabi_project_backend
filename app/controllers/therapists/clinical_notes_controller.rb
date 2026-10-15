@@ -5,6 +5,8 @@ class Therapists::ClinicalNotesController < ApplicationController
   before_action :set_note, only: %i[show update destroy]
 
   def index
+    audit_read!("list_clinical_notes", "User", @patient.id)
+
     render json: @patient.clinical_notes
                          .where(therapist: current_user)
                          .order(created_at: :desc)
@@ -32,6 +34,8 @@ class Therapists::ClinicalNotesController < ApplicationController
   end
 
   def show
+    audit_read!("read", "ClinicalNote", @note.id)
+
     render json: @note.as_json(only: %i[id content date created_at])
   end
 
@@ -49,6 +53,11 @@ class Therapists::ClinicalNotesController < ApplicationController
   end
 
   private
+
+  # Leitura de prontuário precisa ser rastreável (LGPD / CFP 001/2009).
+  def audit_read!(action, entity_type, entity_id)
+    AuditLog.create!(user: current_user, action: action, entity_type: entity_type, entity_id: entity_id)
+  end
 
   def ensure_therapist!
     render json: { error: "Acesso restrito." }, status: :forbidden unless current_user.therapist?

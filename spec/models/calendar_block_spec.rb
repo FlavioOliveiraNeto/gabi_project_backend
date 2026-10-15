@@ -36,6 +36,12 @@ RSpec.describe CalendarBlock, type: :model do
         expect(block).to be_invalid
         expect(block.errors[:reason]).to be_present
       end
+
+      it "é inválido com reason acima de 500 caracteres" do
+        block.reason = "a" * 501
+        expect(block).to be_invalid
+        expect(block.errors[:reason]).to be_present
+      end
     end
 
     describe "lógica temporal" do
