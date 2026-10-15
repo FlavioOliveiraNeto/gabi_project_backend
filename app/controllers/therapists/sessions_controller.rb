@@ -2,9 +2,12 @@ class Therapists::SessionsController < ApplicationController
   before_action :authenticate_user!
   before_action :ensure_therapist!
 
+  MAX_BULK_IDS = 200
+
   def create
     client = current_user.patients.find(params[:patient_id])
     scheduled_at = Time.zone.parse(params[:scheduled_at].to_s)
+    return render json: { error: "Data/hora inválida." }, status: :unprocessable_entity unless scheduled_at
 
     session = client.sessions.build(
       scheduled_at: scheduled_at,
@@ -42,7 +45,7 @@ class Therapists::SessionsController < ApplicationController
 
   # Marca/desmarca pagamento de uma ou de várias sessões de uma vez.
   def mark_paid
-    ids  = Array(params[:ids]).map(&:to_i)
+    ids  = Array(params[:ids]).first(MAX_BULK_IDS).map(&:to_i)
     paid = params.key?(:paid) ? ActiveModel::Type::Boolean.new.cast(params[:paid]) : true
 
     sessions = Session.joins(:user).where(users: { therapist_id: current_user.id }, id: ids).to_a

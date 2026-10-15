@@ -33,7 +33,8 @@ class User < ApplicationRecord
   has_many :patient_notes,   dependent: :destroy
   has_many :weekly_schedules, dependent: :destroy
 
-  validates :name, presence: true
+  validates :name,  presence: true, length: { maximum: 120 }
+  validates :phone, length: { maximum: 30 }, allow_blank: true
   validates :role, presence: true
 
   validates_meet_link :google_meet_link

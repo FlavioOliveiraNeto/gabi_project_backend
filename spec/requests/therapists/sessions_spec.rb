@@ -101,6 +101,18 @@ RSpec.describe "Therapists::Sessions", type: :request do
       end
     end
 
+    context "sem scheduled_at" do
+      it "retorna 422 em vez de 500" do
+        post therapists_sessions_path,
+             params:  valid_params.except(:scheduled_at),
+             headers: headers,
+             as:      :json
+
+        expect(response).to have_http_status(:unprocessable_content)
+        expect(json_body["error"]).to eq("Data/hora inválida.")
+      end
+    end
+
     context "com conflito de horário" do
       let(:patient_b)       { create(:user, :client, therapist: therapist) }
       let(:conflicting_time) { 1.week.from_now.noon }

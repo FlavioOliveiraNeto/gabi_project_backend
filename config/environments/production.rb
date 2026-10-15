@@ -21,8 +21,6 @@ Rails.application.configure do
   # Enable serving of images, stylesheets, and JavaScripts from an asset server.
   # config.asset_host = "http://assets.example.com"
 
-  # Store uploaded files on the local file system (see config/storage.yml for options).
-  config.active_storage.service = :local
 
   # O proxy do Kamal termina TLS e repassa a requisição em HTTP para o Puma.
   # `assume_ssl` faz o Rails tratar essas requisições como seguras — sem ele,
