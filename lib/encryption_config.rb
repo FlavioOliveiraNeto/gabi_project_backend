@@ -41,7 +41,7 @@ module EncryptionConfig
     def validate_production_key!(name, var, value)
       raise Error, "[Active Record Encryption] #{var} não configurada em produção. " \
                    "Gere valores reais com `bin/rails db:encryption:init` e publique-os " \
-                   "no ambiente (Kamal: env.secret) antes do deploy." if value.blank?
+                   "no ambiente (variáveis da Railway ou .env.production) antes do deploy." if value.blank?
 
       raise Error, "[Active Record Encryption] #{var} está usando o valor de desenvolvimento " \
                    "versionado no repositório. Gere uma chave real com " \
