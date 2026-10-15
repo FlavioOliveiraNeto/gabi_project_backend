@@ -19,9 +19,9 @@ Rails.application.config.middleware.insert_before 0, Rack::Cors do
     origins(*allowed_origins)
 
     resource "*",
-      headers:     :any,
+      headers:     %w[Accept Authorization Content-Type X-CSRF-Token],
       methods:     [ :get, :post, :put, :patch, :delete, :options, :head ],
       credentials: true,
-      expose:      [ "X-CSRF-Token" ]
+      max_age:     600
   end
 end

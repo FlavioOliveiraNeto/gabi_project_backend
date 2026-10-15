@@ -1,6 +1,4 @@
-class Therapists::ClinicalNotesController < ApplicationController
-  before_action :authenticate_user!
-  before_action :ensure_therapist!
+class Therapists::ClinicalNotesController < Therapists::BaseController
   before_action :set_patient
   before_action :set_note, only: %i[show update destroy]
 
@@ -31,6 +29,9 @@ class Therapists::ClinicalNotesController < ApplicationController
     else
       render json: { errors: note.errors.full_messages }, status: :unprocessable_entity
     end
+  rescue ActiveRecord::RecordNotUnique
+    # Corrida de dois POSTs: a validação passa nos dois, o índice único barra um.
+    render json: { errors: [ "Session já possui uma anotação clínica" ] }, status: :unprocessable_entity
   end
 
   def show
@@ -59,9 +60,6 @@ class Therapists::ClinicalNotesController < ApplicationController
     AuditLog.create!(user: current_user, action: action, entity_type: entity_type, entity_id: entity_id)
   end
 
-  def ensure_therapist!
-    render json: { error: "Acesso restrito." }, status: :forbidden unless current_user.therapist?
-  end
 
   def set_patient
     @patient = current_user.patients.find_by(id: params[:patient_id])

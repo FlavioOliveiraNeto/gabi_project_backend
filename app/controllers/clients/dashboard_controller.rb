@@ -1,8 +1,4 @@
-class Clients::DashboardController < ApplicationController
-  before_action :authenticate_user!
-  before_action :ensure_client!
-  before_action :enforce_password_change!
-
+class Clients::DashboardController < Clients::BaseController
   def index
     render json: {
       profile: build_profile,
@@ -13,10 +9,6 @@ class Clients::DashboardController < ApplicationController
   end
 
   private
-
-  def ensure_client!
-    render json: { error: "Acesso restrito a clientes." }, status: :forbidden unless current_user.client?
-  end
 
   def build_profile
     {

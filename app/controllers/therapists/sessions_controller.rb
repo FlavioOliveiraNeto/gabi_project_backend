@@ -1,7 +1,4 @@
-class Therapists::SessionsController < ApplicationController
-  before_action :authenticate_user!
-  before_action :ensure_therapist!
-
+class Therapists::SessionsController < Therapists::BaseController
   MAX_BULK_IDS = 200
 
   def create
@@ -24,7 +21,7 @@ class Therapists::SessionsController < ApplicationController
       render json: { errors: session.errors.full_messages }, status: :unprocessable_entity
     end
   rescue ArgumentError
-    render json: { error: "Tipo de sessão inválido: '#{params[:session_type]}'." }, status: :unprocessable_entity
+    render json: { error: "Tipo de sessão inválido." }, status: :unprocessable_entity
   end
 
   def update
@@ -35,7 +32,7 @@ class Therapists::SessionsController < ApplicationController
     when "cancelled"  then session.cancel!
     when "absent"     then session.mark_as_absent!
     else
-               return render json: { error: "Status inválido: '#{new_status}'." }, status: :unprocessable_entity
+               return render json: { error: "Status inválido." }, status: :unprocessable_entity
     end
 
     render json: session_json(session.reload)
@@ -67,10 +64,6 @@ class Therapists::SessionsController < ApplicationController
   end
 
   private
-
-  def ensure_therapist!
-    render json: { error: "Acesso restrito." }, status: :forbidden unless current_user.therapist?
-  end
 
   def client_session(id)
     Session.joins(:user)

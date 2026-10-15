@@ -1,8 +1,4 @@
-class Clients::SessionsController < ApplicationController
-  before_action :authenticate_user!
-  before_action :ensure_client!
-  before_action :enforce_password_change!
-
+class Clients::SessionsController < Clients::BaseController
   def index
     sessions = current_user.sessions
                            .order(scheduled_at: :desc)
@@ -25,11 +21,5 @@ class Clients::SessionsController < ApplicationController
         updated_at: session.updated_at
       }
     }
-  end
-
-  private
-
-  def ensure_client!
-    render json: { error: "Acesso restrito." }, status: :forbidden unless current_user.client?
   end
 end

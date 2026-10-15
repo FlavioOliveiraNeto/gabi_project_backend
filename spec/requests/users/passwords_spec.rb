@@ -53,6 +53,19 @@ RSpec.describe "Users::Passwords (Troca de Senha)", type: :request do
       end
     end
 
+    context "aviso por e-mail" do
+      it "avisa o dono da conta que a senha mudou" do
+        auth_headers
+        ActionMailer::Base.deliveries.clear
+
+        put users_change_password_path, params: valid_params, headers: auth_headers, as: :json
+
+        mail = ActionMailer::Base.deliveries.last
+        expect(mail.to).to eq([ user.email ])
+        expect(mail.subject).to eq("Sua senha foi alterada")
+      end
+    end
+
     context "com must_change_password ativo (primeiro login forçado)" do
       before { user.update!(must_change_password: true) }
 
@@ -261,6 +274,16 @@ RSpec.describe "Users::Passwords (Troca de Senha)", type: :request do
             as: :json
 
         expect(target_user.reload.must_change_password).to be false
+      end
+
+      it "destrava a conta bloqueada por tentativas erradas" do
+        target_user.lock_access!(send_instructions: false)
+
+        put user_password_path,
+            params: { user: valid_reset_params.merge(reset_password_token: reset_token) },
+            as: :json
+
+        expect(target_user.reload).not_to be_access_locked
       end
     end
 

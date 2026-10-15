@@ -1,8 +1,4 @@
-class Clients::PatientNotesController < ApplicationController
-  before_action :authenticate_user!
-  before_action :ensure_client!
-  before_action :enforce_password_change!
-
+class Clients::PatientNotesController < Clients::BaseController
   def index
     notes = current_user.patient_notes
                         .order(created_at: :desc)
@@ -38,10 +34,6 @@ class Clients::PatientNotesController < ApplicationController
   end
 
   private
-
-  def ensure_client!
-    render json: { error: "Acesso restrito." }, status: :forbidden unless current_user.client?
-  end
 
   def note_params
     params.permit(:content)

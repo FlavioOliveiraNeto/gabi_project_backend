@@ -5,7 +5,6 @@ FactoryBot.define do
     password { "SenhaSegura@123!" }
     role     { :therapist }
     phone    { Faker::PhoneNumber.phone_number }
-    force_password_change { false }
     active   { true }
 
     trait :therapist do
