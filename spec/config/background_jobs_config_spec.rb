@@ -21,37 +21,22 @@ RSpec.describe "Configuração dos jobs em background" do
     expect(puma_config.read).to match(/plugin :solid_queue if ENV\["SOLID_QUEUE_IN_PUMA"\]/)
   end
 
-  it "produção declara um serviço worker dedicado" do
-    expect(compose(prod_compose)).to match(/^\s{2}worker:$/),
-      "docker-compose.prod.yml não declara o serviço `worker`. Sem ele (e sem " \
-      "SOLID_QUEUE_IN_PUMA no backend) NENHUM job roda em produção, " \
-      "silenciosamente. Verifique com `bin/rails jobs:health`."
-  end
-
-  it "o worker de produção executa bin/jobs" do
-    worker = compose(prod_compose)[/^\s{2}worker:.*?(?=^\s{2}\w|\z)/m].to_s
-
-    expect(worker).to match(%r{bin/jobs})
-  end
-
-  it "o worker espera o backend ficar saudável (migrations prontas)" do
-    worker = compose(prod_compose)[/^\s{2}worker:.*?(?=^\s{2}\w|\z)/m].to_s
-
-    expect(worker).to include("backend:")
-    expect(worker).to include("service_healthy")
-  end
-
-  it "o backend de produção tem healthcheck, que é o gate do worker" do
+  it "o backend de produção tem healthcheck (sinal de migrations prontas)" do
     backend = compose_backend_env(prod_compose)
 
     expect(backend).to include("healthcheck")
   end
 
-  it "o backend de produção NÃO roda jobs dentro do Puma" do
+  # Decisão de 2026-09: sem serviço `worker` — a VM de 956Mi entrava em swap
+  # com um segundo processo Rails. Os jobs rodam dentro do Puma; se esta
+  # variável sumir, NENHUM job roda em produção, silenciosamente.
+  it "o backend de produção roda os jobs dentro do Puma" do
     backend = compose_backend_env(prod_compose)
     active  = backend.to_s.lines.reject { |l| l.strip.start_with?("#") }.join
 
-    expect(active).not_to match(/SOLID_QUEUE_IN_PUMA:\s*["']?true/)
+    expect(active).to match(/SOLID_QUEUE_IN_PUMA:\s*["']?true/),
+      "docker-compose.prod.yml não liga SOLID_QUEUE_IN_PUMA no backend e não há " \
+      "serviço worker: nenhum job rodaria. Verifique com `bin/rails jobs:health`."
   end
 
   it "o Dockerfile torna bin/jobs executável e com LF" do

@@ -24,7 +24,7 @@ RSpec.describe "Users::Sessions (Login / Logout)", type: :request do
         expect(response.headers["Set-Cookie"]).to match(/httponly/i)
       end
 
-      it "define o cookie com SameSite=Lax no ambiente de teste (não-produção)" do
+      it "define o cookie com SameSite=Lax (frontends e API no mesmo site)" do
         expect(response.headers["Set-Cookie"]).to match(/SameSite=Lax/i)
       end
 

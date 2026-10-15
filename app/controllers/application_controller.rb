@@ -134,7 +134,10 @@ class ApplicationController < ActionController::Base
       value:     token,
       httponly:  true,
       secure:    Rails.env.production?,
-      same_site: Rails.env.production? ? :none : :lax,
+      # Lax basta: www/app/api são subdomínios de psigabriellafelix.com.br, ou
+      # seja, o mesmo "site". Uma origem fora desse domínio (ex.: *.vercel.app)
+      # deixa de conseguir logar — o Safari do iOS já bloqueava mesmo com None.
+      same_site: :lax,
       max_age:   Warden::JWTAuth.config.expiration_time,
       path:      "/"
     }
@@ -143,7 +146,7 @@ class ApplicationController < ActionController::Base
   def clear_auth_cookie
     cookies.delete(:auth_token, {
       secure:    Rails.env.production?,
-      same_site: Rails.env.production? ? :none : :lax,
+      same_site: :lax,
       path:      "/"
     })
   end
